@@ -1,0 +1,331 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#ifndef APSTUDIO_INVOKED
+#include "targetver.h"
+#endif
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// Chinese (P.R.C.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+#ifdef _WIN32
+LANGUAGE LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED
+#pragma code_page(936)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#ifndef APSTUDIO_INVOKED\r\n"
+    "#include ""targetver.h""\r\n"
+    "#endif\r\n"
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "\r\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)\r\n"
+    "LANGUAGE 4, 2\r\n"
+    "#pragma code_page(936)\r\n"
+    "#include ""res\\LogView.rc2""  // ﹞? Microsoft Visual C++ ㊣角?-米?℅那?∩\r\n"
+    "#include ""l.CHS\\afxres.rc""      // ㊣那℅?℅谷?t\r\n"
+    "#endif\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_MAINFRAME           ICON                    "res\\LogView.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOGEX 0, 0, 170, 62
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "About LogView"
+FONT 9, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    ICON            IDR_MAINFRAME,IDC_STATIC,14,14,20,20
+    LTEXT           "LogView, 1.0 Copyright (C) 2011",IDC_STATIC,41,14,114,8,SS_NOPREFIX
+    DEFPUSHBUTTON   "OK",IDOK,113,41,50,14,WS_GROUP
+    LTEXT           "Email: huhangscu@gmail.com",IDC_LINK_EMAIL,41,28,200,8,SS_NOTIFY
+END
+
+IDD_LOGVIEW_DIALOG DIALOGEX 0, 0, 321, 199
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "LogView"
+MENU IDR_MAIN_MENU
+FONT 9, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    LTEXT           "T&ext Filter:",IDC_LABEL_TEXT_FILTER,6,3,35,8
+    EDITTEXT        IDC_EDIT_TEXT_FILTER,45,1,233,12,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "&Go",IDC_BTN_DO_FILTER,285,1,28,12
+    CONTROL         "",IDC_LIST_LOG,"SysListView32",LVS_REPORT | LVS_SHOWSELALWAYS | LVS_ALIGNLEFT | LVS_OWNERDATA | WS_BORDER,7,120,307,72
+END
+
+IDD_PANEL_SELECT DIALOGEX 0, 0, 97, 77
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+EXSTYLE WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE
+CAPTION "Select"
+FONT 9, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+END
+
+IDD_PANEL_PROCESS DIALOGEX 0, 0, 115, 125
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+EXSTYLE WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE
+CAPTION "Process Panel"
+FONT 9, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    CONTROL         "",IDC_TREE_THREAD,"SysTreeView32",TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS | TVS_CHECKBOXES | TVS_NOHSCROLL | WS_BORDER | WS_TABSTOP,7,7,101,111
+END
+
+IDD_LOGVIEW_OPTIONS DIALOGEX 0, 0, 194, 183
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_MINIMIZEBOX | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "Options"
+FONT 9, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    CONTROL         "Index",IDC_CHKBTN_INDEX,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,27,19,34,10
+    CONTROL         "Process Id",IDC_CHKBTN_PROCID,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,96,30,48,10
+    CONTROL         "Thread Id",IDC_CHKBTN_THREADID,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,96,41,47,10
+    CONTROL         "Level",IDC_CHKBTN_LEVEL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,27,30,32,10
+    CONTROL         "Filter",IDC_CHKBTN_FILTER,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,27,41,31,10
+    CONTROL         "Log",IDC_CHKBTN_LOG,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,27,52,27,10
+    DEFPUSHBUTTON   "OK",IDOK,83,162,47,14
+    PUSHBUTTON      "Cancel",IDCANCEL,140,162,47,14
+    GROUPBOX        "Select Columns:",IDC_STATIC,13,6,149,64
+    LTEXT           "Max Log Count:",IDC_STATIC,26,94,50,8
+    EDITTEXT        IDC_EDIT_MAX_LOG_COUNT,86,90,53,14,ES_AUTOHSCROLL | ES_NUMBER
+    GROUPBOX        "Log Count",IDC_STATIC,13,76,149,70
+    LTEXT           "When MaxCount Reached:",IDC_STATIC,26,110,84,8
+    CONTROL         "Clear",IDC_RADIO_CLEAR,"Button",BS_AUTORADIOBUTTON | WS_GROUP,35,124,31,10
+    CONTROL         "Stop",IDC_RADIO_STOP,"Button",BS_AUTORADIOBUTTON,82,124,31,10
+    CONTROL         "Time",IDC_CHKBTN_TIME,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,96,19,31,10
+    CONTROL         "Clear Filter when clear Log",IDC_CHKBTN_CLEAR_FILTER,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,13,150,98,10
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,12,914
+ PRODUCTVERSION 1,0,0,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040903a8"
+        BEGIN
+            VALUE "CompanyName", "SLTalk"
+            VALUE "FileDescription", "Log Viewer"
+            VALUE "FileVersion", "1.0.12.914"
+            VALUE "InternalName", "LogView.exe"
+            VALUE "LegalCopyright", "Copyright (c) 2011 SLTalk"
+            VALUE "OriginalFilename", "LogView.exe"
+            VALUE "ProductName", "LogView"
+            VALUE "ProductVersion", "1.0.12.914"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 936
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO 
+BEGIN
+    IDD_ABOUTBOX, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 163
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 55
+    END
+
+    IDD_LOGVIEW_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 314
+        BOTTOMMARGIN, 192
+    END
+
+    IDD_PANEL_SELECT, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 90
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 70
+    END
+
+    IDD_PANEL_PROCESS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 108
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 118
+    END
+
+    IDD_LOGVIEW_OPTIONS, DIALOG
+    BEGIN
+        LEFTMARGIN, 13
+        RIGHTMARGIN, 187
+        BOTTOMMARGIN, 176
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MAIN_MENU MENU 
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&Open\tCtrl+O",               ID_FILE_OPEN
+        MENUITEM "&Save\tCtrl+S",               ID_FILE_SAVE
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",                       ID_FILE_EXIT
+    END
+    POPUP "&Edit"
+    BEGIN
+        MENUITEM "C&lear\tCtrl+X",              ID_EDIT_CLEAR
+        MENUITEM "&Copy Log\tCtrl+C",           ID_EDIT_COPY
+        MENUITEM "Copy &Whole Line\tCtrl+W",    ID_EDIT_COPYWHOLELINE
+        MENUITEM SEPARATOR
+        MENUITEM "&Find\tCtrl+F",               ID_EDIT_FIND
+    END
+    POPUP "&Panel"
+    BEGIN
+        MENUITEM "&Level\tCtrl+L",              ID_PANEL_LEVEL
+        MENUITEM "F&ilter\tCtrl+I",             ID_PANEL_FILTER
+        MENUITEM "&Process\tCtrl+P",            ID_PANEL_PROCESS
+    END
+    POPUP "&Option"
+    BEGIN
+        MENUITEM "&Top Most",                   ID_OPTION_TOPMOST
+        MENUITEM "&Auto Scroll",                ID_OPTION_AUTOSCROLL
+        MENUITEM "Log OutputDebugString",       ID_OPTION_LOGOUTPUTDEBUGSTRING
+        MENUITEM "&Options",                    ID_OPTION_OPTIONS
+    END
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&About",                      ID_HELP_ABOUT
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+IDR_MAIN_ACCE ACCELERATORS 
+BEGIN
+    "X",            ID_EDIT_CLEAR,          VIRTKEY, CONTROL, NOINVERT
+    "C",            ID_EDIT_COPY,           VIRTKEY, CONTROL, NOINVERT
+    "F",            ID_EDIT_FIND,           VIRTKEY, CONTROL, NOINVERT
+    "O",            ID_FILE_OPEN,           VIRTKEY, CONTROL, NOINVERT
+    "S",            ID_FILE_SAVE,           VIRTKEY, CONTROL, NOINVERT
+    "I",            ID_PANEL_FILTER,        VIRTKEY, CONTROL, NOINVERT
+    "L",            ID_PANEL_LEVEL,         VIRTKEY, CONTROL, NOINVERT
+    "P",            ID_PANEL_PROCESS,       VIRTKEY, CONTROL, NOINVERT
+    "W",            ID_EDIT_COPYWHOLELINE,  VIRTKEY, CONTROL, NOINVERT
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE 
+BEGIN
+    IDS_ABOUTBOX            "About LogView(&A)..."
+END
+
+#endif    // Chinese (P.R.C.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_SPLITTER_RESOURCES
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_CHS)
+LANGUAGE 4, 2
+#pragma code_page(936)
+#include "res\LogView.rc2"  // ﹞? Microsoft Visual C++ ㊣角?-米?℅那?∩
+#include "l.CHS\afxres.rc"      // ㊣那℅?℅谷?t
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+
