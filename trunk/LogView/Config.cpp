@@ -10,6 +10,7 @@
 #define DEFAULT_TOPMOST                     FALSE
 #define DEFAULT_AUTOSCROLL                  TRUE
 #define DEFAULT_CLEAR_FILTER_WHEN_CLEAR_LOG FALSE
+#define DEFAULT_ENABLE_REGEX                FALSE
 
 CConfig::CConfig(void)
 {
@@ -26,6 +27,7 @@ CConfig::CConfig(void)
     m_bTopMost = DEFAULT_TOPMOST;
     m_bAutoScroll = DEFAULT_AUTOSCROLL;
     m_bClearFilterWhenClearLog = DEFAULT_CLEAR_FILTER_WHEN_CLEAR_LOG;
+    m_bEnableRegex = DEFAULT_ENABLE_REGEX;
 }
 
 CConfig::~CConfig(void)
@@ -48,6 +50,7 @@ CConfig& CConfig::GetConfig()
 #define CONFIG_KEY_TOPMOST                  _T("TopMost")
 #define CONFIG_KEY_AUTOSCROLL               _T("AutoScroll")
 #define CONFIG_KEY_CLEAR_FILTER             _T("ClearFilterWhenClearLog")
+#define CONFIG_KEY_ENABLE_REGEX             _T("EnableRegex")
 
 void CConfig::ReloadConfig()
 {
@@ -125,6 +128,14 @@ void CConfig::ReloadConfig()
         50,
         szConfigFilePath);
     m_bClearFilterWhenClearLog = (_tcsicmp(szBuffer, _T("true")) == 0);
+
+    ::GetPrivateProfileString(CONFIG_APP_NAME,
+        CONFIG_KEY_ENABLE_REGEX,
+        DEFAULT_ENABLE_REGEX ? _T("true") : _T("false"),
+        szBuffer,
+        50,
+        szConfigFilePath);
+    m_bEnableRegex = (_tcsicmp(szBuffer, _T("true")) == 0);
 }
 
 void CConfig::SaveConfig()
@@ -162,6 +173,9 @@ void CConfig::SaveConfig()
 
     _sntprintf(szBuffer, MAX_PATH, _T("%s"), m_bClearFilterWhenClearLog ? _T("true") : _T("false"));
     ::WritePrivateProfileString(CONFIG_APP_NAME, CONFIG_KEY_CLEAR_FILTER,   szBuffer, szConfigFilePath);
+
+    _sntprintf(szBuffer, MAX_PATH, _T("%s"), m_bEnableRegex ? _T("true") : _T("false"));
+    ::WritePrivateProfileString(CONFIG_APP_NAME, CONFIG_KEY_ENABLE_REGEX,   szBuffer, szConfigFilePath);
 }
 
 
@@ -224,4 +238,14 @@ BOOL CConfig::IsClearFilterWhenClearLog() const
 void CConfig::SetClearFilterWhenClearLog(BOOL bClear)
 {
     m_bClearFilterWhenClearLog = bClear;
+}
+
+BOOL CConfig::IsRegexEnabled() const
+{
+    return m_bEnableRegex;
+}
+
+void CConfig::SetRegexEnabled(BOOL bEnable)
+{
+    m_bEnableRegex = bEnable;
 }

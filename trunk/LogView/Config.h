@@ -36,6 +36,9 @@ public:
     BOOL    IsClearFilterWhenClearLog() const;
     void    SetClearFilterWhenClearLog(BOOL bClear);
 
+    BOOL    IsRegexEnabled() const;
+    void    SetRegexEnabled(BOOL bEnable);
+
 protected:
     ColumnTypeVector    m_vctShowTypes;
     DWORD               m_dwMaxLogCount;
@@ -43,4 +46,5 @@ protected:
     BOOL                m_bTopMost;
     BOOL                m_bAutoScroll;
     BOOL                m_bClearFilterWhenClearLog;
+    BOOL                m_bEnableRegex;
 };
