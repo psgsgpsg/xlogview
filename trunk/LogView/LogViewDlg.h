@@ -130,7 +130,6 @@ protected:
 
     afx_msg void OnLvnGetdispinfoListLog(NMHDR *pNMHDR, LRESULT *pResult);
     afx_msg void OnSize(UINT nType, int cx, int cy);
-    virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 
     // Panel的回调消息
     afx_msg LRESULT OnFilterPanelMsg(WPARAM wParam, LPARAM lParam);
@@ -151,32 +150,34 @@ protected:
     // 菜单处理方法
 
     // 文件菜单
-    void DoFileOpenCmd();
-    void DoFileSaveCmd();
-    void DoFileExitCmd();
+    afx_msg void DoFileOpenCmd();
+    afx_msg void DoFileSaveCmd();
+    afx_msg void DoFileExitCmd();
 
     // 编辑菜单
-    void DoEditClearCmd();
-    void DoEditCopyCmd();
-    void DoEditCopyWholeLineCmd();
-    void DoEditFindCmd();
+    afx_msg void DoEditClearCmd();
+    afx_msg void DoEditCopyCmd();
+    afx_msg void DoEditCopyWholeLineCmd();
+    afx_msg void DoEditFindCmd();
 
     // 选项板菜单
-    void DoPanelFilterCmd();
-    void DoPanelLevelCmd();
-    void DoPanelProcessCmd();
+    afx_msg void DoPanelFilterCmd();
+    afx_msg void DoPanelLevelCmd();
+    afx_msg void DoPanelProcessCmd();
 
     void DoPanelCmdHelper(CDialog* pPanel, WORD wCmdId, WORD wCmdId2 = 0);
 
     // 选项菜单
-    void DoOptionTopMostCmd();
-    void DoOptionAutoScrollCmd();
-    void DoOptionLogOutputDebugStringCmd();
-    void DoEnableRegexCmd();
-    void DoOptionOptions();
+    afx_msg void DoOptionTopMostCmd();
+    afx_msg void DoOptionAutoScrollCmd();
+    afx_msg void DoOptionLogOutputDebugStringCmd();
+    afx_msg void DoEnableRegexCmd();
+    afx_msg void DoEnableWildcardCmd();
+    afx_msg void DoOptionOptions();
 
     // 帮助菜单
-    void DoHelpAbout();
+    afx_msg void DoHelpAbout();
+
 public:
     afx_msg void OnNMRClickListLog(NMHDR *pNMHDR, LRESULT *pResult);
     afx_msg void OnNMCustomdrawListLog(NMHDR *pNMHDR, LRESULT *pResult);

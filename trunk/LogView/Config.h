@@ -9,6 +9,7 @@
 #define DEFAULT_AUTOSCROLL                  TRUE
 #define DEFAULT_CLEAR_FILTER_WHEN_CLEAR_LOG FALSE
 #define DEFAULT_ENABLE_REGEX                FALSE
+#define DEFAULT_ENABLE_WILDCARD             FALSE
 
 class CConfig
 {
@@ -47,6 +48,9 @@ public:
     BOOL    IsRegexEnabled() const;
     void    SetRegexEnabled(BOOL bEnable);
 
+    BOOL    IsWildcardEnabled() const;
+    void    SetWildcardEnabled(BOOL bEnable);
+
 protected:
     ColumnTypeVector    m_vctShowTypes;
     DWORD               m_dwMaxLogCount;
@@ -55,4 +59,5 @@ protected:
     BOOL                m_bAutoScroll;
     BOOL                m_bClearFilterWhenClearLog;
     BOOL                m_bEnableRegex;
+    BOOL                m_bEnableWildcard;
 };

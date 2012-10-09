@@ -95,8 +95,8 @@ CAPTION "LogView"
 MENU IDR_MAIN_MENU
 FONT 9, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
-    LTEXT           "Te&xt Filter:",IDC_LABEL_TEXT_FILTER,6,3,41,8
-    EDITTEXT        IDC_EDIT_TEXT_FILTER,50,1,228,12,ES_AUTOHSCROLL
+    LTEXT           "Te&xt Filter:",IDC_LABEL_TEXT_FILTER,6,3,47,8
+    EDITTEXT        IDC_EDIT_TEXT_FILTER,55,1,223,12,ES_AUTOHSCROLL
     DEFPUSHBUTTON   "&Go",IDC_BTN_DO_FILTER,285,1,28,12
     CONTROL         "",IDC_LIST_LOG,"SysListView32",LVS_REPORT | LVS_SHOWSELALWAYS | LVS_ALIGNLEFT | LVS_OWNERDATA | WS_BORDER,7,120,307,72
 END
@@ -151,7 +151,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,8,1009
+ FILEVERSION 1,0,9,1009
  PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -169,12 +169,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "SLTalk"
             VALUE "FileDescription", "Log Viewer"
-            VALUE "FileVersion", "1.0.8.1009"
+            VALUE "FileVersion", "1.0.9.1009"
             VALUE "InternalName", "LogView.exe"
             VALUE "LegalCopyright", "Copyright (c) 2011 SLTalk"
             VALUE "OriginalFilename", "LogView.exe"
             VALUE "ProductName", "LogView"
-            VALUE "ProductVersion", "1.0.8.1009"
+            VALUE "ProductVersion", "1.0.9.1009"
         END
     END
     BLOCK "VarFileInfo"
@@ -266,7 +266,8 @@ BEGIN
         MENUITEM "&Top Most",                   ID_OPTION_TOPMOST
         MENUITEM "&Auto Scroll",                ID_OPTION_AUTOSCROLL
         MENUITEM SEPARATOR
-        MENUITEM "Enable &Regex\tCtrl+R",       ID_OPTION_ENABLEREGEX
+        MENUITEM "Enable &Regex",               ID_OPTION_ENABLE_REGEX
+        MENUITEM "Enable &Wildcard",            ID_OPTION_ENABLE_WILDCARD
         MENUITEM SEPARATOR
         POPUP "A&dvance"
         BEGIN
@@ -298,7 +299,6 @@ BEGIN
     "I",            ID_PANEL_FILTER,        VIRTKEY, CONTROL, NOINVERT
     "L",            ID_PANEL_LEVEL,         VIRTKEY, CONTROL, NOINVERT
     "P",            ID_PANEL_PROCESS,       VIRTKEY, CONTROL, NOINVERT
-    "R",            ID_OPTION_ENABLEREGEX,  VIRTKEY, CONTROL, NOINVERT
 END
 
 
