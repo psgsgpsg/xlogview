@@ -1,0 +1,20 @@
+#summary One-sentence summary of this page.
+#labels Phase-Deploy
+
+= Introduction =
+
+Build Requirement
+
+
+= Details =
+
+From SVN version 7, logview uses *boost::regex* to enhance text filter.
+
+Requirement for boost includes:
+ # Multi thread
+ # Static Link
+ # Regex component.
+
+*Boost* is not included in SVN.
+
+So before you build *LogView*, you need to modify *"Additional Include Directory"* and *"Additional Library Directory"* to indicate the right position of *boost* library.
