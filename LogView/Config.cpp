@@ -19,6 +19,7 @@ CConfig::CConfig(void)
     m_bAutoScroll = DEFAULT_AUTOSCROLL;
     m_bClearFilterWhenClearLog = DEFAULT_CLEAR_FILTER_WHEN_CLEAR_LOG;
     m_bEnableRegex = DEFAULT_ENABLE_REGEX;
+    m_bEnableWildcard = DEFAULT_ENABLE_WILDCARD;
 }
 
 CConfig::~CConfig(void)
@@ -42,6 +43,7 @@ CConfig& CConfig::GetConfig()
 #define CONFIG_KEY_AUTOSCROLL               _T("AutoScroll")
 #define CONFIG_KEY_CLEAR_FILTER             _T("ClearFilterWhenClearLog")
 #define CONFIG_KEY_ENABLE_REGEX             _T("EnableRegex")
+#define CONFIG_KEY_ENABLE_WILDCARD          _T("EnableWildcard")
 
 void CConfig::ReloadConfig()
 {
@@ -127,6 +129,14 @@ void CConfig::ReloadConfig()
         50,
         szConfigFilePath);
     m_bEnableRegex = (_tcsicmp(szBuffer, _T("true")) == 0);
+
+    ::GetPrivateProfileString(CONFIG_APP_NAME,
+        CONFIG_KEY_ENABLE_WILDCARD,
+        DEFAULT_ENABLE_WILDCARD ? _T("true") : _T("false"),
+        szBuffer,
+        50,
+        szConfigFilePath);
+    m_bEnableWildcard = (_tcsicmp(szBuffer, _T("true")) == 0);
 }
 
 void CConfig::SaveConfig()
@@ -167,6 +177,9 @@ void CConfig::SaveConfig()
 
     _sntprintf(szBuffer, MAX_PATH, _T("%s"), m_bEnableRegex ? _T("true") : _T("false"));
     ::WritePrivateProfileString(CONFIG_APP_NAME, CONFIG_KEY_ENABLE_REGEX,   szBuffer, szConfigFilePath);
+
+    _sntprintf(szBuffer, MAX_PATH, _T("%s"), m_bEnableWildcard ? _T("true") : _T("false"));
+    ::WritePrivateProfileString(CONFIG_APP_NAME, CONFIG_KEY_ENABLE_WILDCARD,   szBuffer, szConfigFilePath);
 }
 
 
@@ -239,4 +252,14 @@ BOOL CConfig::IsRegexEnabled() const
 void CConfig::SetRegexEnabled(BOOL bEnable)
 {
     m_bEnableRegex = bEnable;
+}
+
+BOOL CConfig::IsWildcardEnabled() const
+{
+    return m_bEnableWildcard;
+}
+
+void CConfig::SetWildcardEnabled(BOOL bEnable)
+{
+    m_bEnableWildcard = bEnable;
 }

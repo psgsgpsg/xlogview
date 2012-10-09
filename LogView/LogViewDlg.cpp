@@ -17,6 +17,7 @@
 #include "Config.h"
 
 #include <boost/regex.hpp> 
+#include "katewildcardmatcher.h"
 
 #pragma warning(disable: 4996)
 #pragma warning(disable: 4018)
@@ -88,6 +89,36 @@ BEGIN_MESSAGE_MAP(CLogViewDlg, CDialog)
 
     ON_NOTIFY(NM_RCLICK, IDC_LIST_LOG, &CLogViewDlg::OnNMRClickListLog)
     ON_NOTIFY(NM_CUSTOMDRAW, IDC_LIST_LOG, &CLogViewDlg::OnNMCustomdrawListLog)
+
+// Command
+
+    // 文件菜单
+    ON_COMMAND(ID_FILE_OPEN, &CLogViewDlg::DoFileOpenCmd)
+    ON_COMMAND(ID_FILE_SAVE, &CLogViewDlg::DoFileSaveCmd)
+    ON_COMMAND(ID_FILE_EXIT, &CLogViewDlg::DoFileExitCmd)
+
+    // 编辑菜单
+    ON_COMMAND(ID_EDIT_CLEAR, &CLogViewDlg::DoEditClearCmd)
+    ON_COMMAND(ID_EDIT_COPY, &CLogViewDlg::DoEditCopyCmd)
+    ON_COMMAND(ID_EDIT_COPYWHOLELINE, &CLogViewDlg::DoEditCopyWholeLineCmd)
+    ON_COMMAND(ID_EDIT_FIND, &CLogViewDlg::DoEditFindCmd)
+
+    // 选项板菜单
+    ON_COMMAND(ID_PANEL_FILTER, &CLogViewDlg::DoPanelFilterCmd)
+    ON_COMMAND(ID_PANEL_LEVEL, &CLogViewDlg::DoPanelLevelCmd)
+    ON_COMMAND(ID_PANEL_PROCESS, &CLogViewDlg::DoPanelProcessCmd)
+
+    // 选项菜单
+    ON_COMMAND(ID_OPTION_TOPMOST, &CLogViewDlg::DoOptionTopMostCmd)
+    ON_COMMAND(ID_OPTION_AUTOSCROLL, &CLogViewDlg::DoOptionAutoScrollCmd)
+    ON_COMMAND(ID_OPTION_LOGOUTPUTDEBUGSTRING, &CLogViewDlg::DoOptionLogOutputDebugStringCmd)
+    ON_COMMAND(ID_OPTION_ENABLE_REGEX, &CLogViewDlg::DoEnableRegexCmd)
+    ON_COMMAND(ID_OPTION_ENABLE_WILDCARD, &CLogViewDlg::DoEnableWildcardCmd)
+    ON_COMMAND(ID_OPTION_OPTIONS, &CLogViewDlg::DoOptionOptions)
+
+    // 帮助菜单
+    ON_COMMAND(ID_HELP_ABOUT, &CLogViewDlg::DoHelpAbout)
+
 END_MESSAGE_MAP()
 
 
@@ -146,7 +177,17 @@ BOOL CLogViewDlg::OnInitDialog()
         pPanelMenu->CheckMenuItem(ID_OPTION_AUTOSCROLL, MF_BYCOMMAND | (bAutoScroll ? MF_CHECKED : MF_UNCHECKED));
 
         BOOL bEnableRegex = CConfig::GetConfig().IsRegexEnabled();
-        pPanelMenu->CheckMenuItem(ID_OPTION_ENABLEREGEX, MF_BYCOMMAND | (bEnableRegex ? MF_CHECKED : MF_UNCHECKED));
+        pPanelMenu->CheckMenuItem(ID_OPTION_ENABLE_REGEX, MF_BYCOMMAND | (bEnableRegex ? MF_CHECKED : MF_UNCHECKED));
+
+        BOOL bEnableWildcard = CConfig::GetConfig().IsWildcardEnabled();
+        pPanelMenu->CheckMenuItem(ID_OPTION_ENABLE_WILDCARD, MF_BYCOMMAND | (bEnableWildcard ? MF_CHECKED : MF_UNCHECKED));
+
+        LPCTSTR szFilterText = _T("Te&xt Filter:");
+        if(bEnableRegex)
+            szFilterText = _T("Rege&x Filter:");
+        else if(bEnableWildcard)
+            szFilterText = _T("&Wildcard Filter:");
+        SetDlgItemText(IDC_LABEL_TEXT_FILTER, szFilterText);
     }
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
@@ -253,16 +294,6 @@ void CLogViewDlg::OnSize(UINT nType, int cx, int cy)
     }
 
     RepositionBars(AFX_IDW_CONTROLBAR_FIRST,AFX_IDW_CONTROLBAR_LAST,ID_INDICATOR_NUM);
-}
-
-BOOL CLogViewDlg::OnCommand(WPARAM wParam, LPARAM lParam)
-{
-    if(HIWORD(wParam) == 0 || HIWORD(wParam) == 1)
-    {
-        if(DoCmdId(LOWORD(wParam)))
-            return TRUE;
-    }
-    return __super::OnCommand(wParam, lParam);
 }
 
 // Panel的回调消息
@@ -440,8 +471,23 @@ void CLogViewDlg::OnBnClickedBtnDoFilter()
     m_vctTextFilter.clear();
 
     BOOL bEnableRegex = CConfig::GetConfig().IsRegexEnabled();
+    // BOOL bEnableWildcard = CConfig::GetConfig().IsWildcardEnabled();
+    // if(bEnableRegex || bEnableWildcard)
     if(bEnableRegex)
     {
+
+        try
+        {
+            boost::wregex expression(strTextFilter);
+        }
+        catch(...)
+        {
+            m_bEditTextFilterUnApplied = TRUE;
+            GetDlgItem(IDC_EDIT_TEXT_FILTER)->Invalidate(TRUE);
+            AfxMessageBox(_T("Invalid Regex Expression!"), MB_OK | MB_ICONWARNING);
+            return;
+        }
+
         if(!strTextFilter.IsEmpty())
             m_vctTextFilter.push_back((LPCTSTR)strTextFilter);
     }
@@ -668,78 +714,6 @@ LogView::Util::XString CLogViewDlg::GetItemText(int nItem, ColumnType type)
     return strResult;
 }
 
-// 执行菜单命令，返回内部是否已处理
-BOOL CLogViewDlg::DoCmdId(WORD wId)
-{
-    BOOL bHandled = TRUE;
-    switch(wId)
-    {
-        // 文件菜单
-    case ID_FILE_OPEN:
-        DoFileOpenCmd();
-        break;
-    case ID_FILE_SAVE:
-        DoFileSaveCmd();
-        break;
-    case ID_FILE_EXIT:
-        DoFileExitCmd();
-        break;
-
-        // 编辑菜单
-    case ID_EDIT_CLEAR:
-        DoEditClearCmd();
-        break;
-    case ID_EDIT_COPY:
-        DoEditCopyCmd();
-        break;
-    case ID_EDIT_COPYWHOLELINE:
-        DoEditCopyWholeLineCmd();
-        break;
-    case ID_EDIT_FIND:
-        DoEditFindCmd();
-        break;
-
-        // 选项板菜单
-    case ID_PANEL_FILTER:
-        DoPanelFilterCmd();
-        break;
-    case ID_PANEL_LEVEL:
-        DoPanelLevelCmd();
-        break;
-    case ID_PANEL_PROCESS:
-        DoPanelProcessCmd();
-        break;
-
-        // 选项菜单
-    case ID_OPTION_TOPMOST:
-        DoOptionTopMostCmd();
-        break;
-    case ID_OPTION_AUTOSCROLL:
-        DoOptionAutoScrollCmd();
-        break;
-    case ID_OPTION_LOGOUTPUTDEBUGSTRING:
-        DoOptionLogOutputDebugStringCmd();
-        break;
-    case ID_OPTION_ENABLEREGEX:
-        DoEnableRegexCmd();
-        break;
-    case ID_OPTION_OPTIONS:
-        DoOptionOptions();
-        break;
-
-        // 帮助菜单
-    case ID_HELP_ABOUT:
-        DoHelpAbout();
-        break;
-
-    default:
-        bHandled = FALSE;
-        break;
-    }
-
-    return bHandled;
-}
-
 // 每次发生变化的时候，按照用户选择的Filter对日志进行过滤
 void CLogViewDlg::DoFilter()
 {
@@ -867,11 +841,36 @@ BOOL CLogViewDlg::SubMatchTextFilter(const LogView::Util::stLogInfo& info)
         return TRUE;
 
     BOOL bEnableRegex = CConfig::GetConfig().IsRegexEnabled();
+    BOOL bEnableWildcard = CConfig::GetConfig().IsWildcardEnabled();
     if(bEnableRegex)
     {
-        boost::wregex expression(m_vctTextFilter[0]);
-        boost::wcmatch what; 
-        bMatch = boost::regex_match(info.strLog.GetData(), what, expression);
+        try
+        {
+            boost::wregex expression(m_vctTextFilter[0]);
+            boost::wcmatch what; 
+            bMatch = boost::regex_match(info.strLog.GetData(), what, expression);
+        }
+        catch (...)
+        {
+            bMatch = FALSE;
+        }
+    }
+    else if(bEnableWildcard)
+    {
+        bMatch = FALSE;
+        LogView::Util::XString strTempLog;
+        LogView::Util::XString strTempTextFilter;
+        std::vector<LogView::Util::XString>::const_iterator IteTextFilter = m_vctTextFilter.begin();
+        for(; IteTextFilter != m_vctTextFilter.end(); ++ IteTextFilter)
+        {
+            if(WidecardMatch(info.strLog.c_str(), IteTextFilter->c_str(), false))
+            {
+                bMatch = TRUE;
+                break;
+            }
+        }
+        if(!bMatch)
+            return FALSE;
     }
     else 
     {
@@ -1301,9 +1300,9 @@ void CLogViewDlg::DoPanelCmdHelper(CDialog* pPanel, WORD wCmdId, WORD wCmdId2 /*
 // 选项菜单
 void CLogViewDlg::DoOptionTopMostCmd()
 {
-    BOOL bTopMost = !CConfig::GetConfig().GetTopMost();
-
     CMenu* pPanelMenu = GetMenu()->GetSubMenu(3);
+
+    BOOL bTopMost = !(pPanelMenu->GetMenuState(ID_OPTION_TOPMOST, MF_BYCOMMAND) & MF_CHECKED);
     pPanelMenu->CheckMenuItem(ID_OPTION_TOPMOST, MF_BYCOMMAND | (bTopMost ? MF_CHECKED : MF_UNCHECKED));
 
     CConfig::GetConfig().SetTopMost(bTopMost);
@@ -1312,9 +1311,9 @@ void CLogViewDlg::DoOptionTopMostCmd()
 
 void CLogViewDlg::DoOptionAutoScrollCmd()
 {
-    BOOL bAutoScroll = !CConfig::GetConfig().GetAutoScroll();
-
     CMenu* pPanelMenu = GetMenu()->GetSubMenu(3);
+
+    BOOL bAutoScroll = !(pPanelMenu->GetMenuState(ID_OPTION_AUTOSCROLL, MF_BYCOMMAND) & MF_CHECKED);
     pPanelMenu->CheckMenuItem(ID_OPTION_AUTOSCROLL, MF_BYCOMMAND | (bAutoScroll ? MF_CHECKED : MF_UNCHECKED));
 
     CConfig::GetConfig().SetAutoScroll(bAutoScroll);
@@ -1354,12 +1353,35 @@ void CLogViewDlg::DoEnableRegexCmd()
 {
     CMenu* pPanelMenu = GetMenu()->GetSubMenu(3);
 
-    BOOL bEnableRegex = !CConfig::GetConfig().IsRegexEnabled();
-    pPanelMenu->CheckMenuItem(ID_OPTION_ENABLEREGEX, MF_BYCOMMAND | (bEnableRegex ? MF_CHECKED : MF_UNCHECKED));
-
+    BOOL bEnableRegex = !(pPanelMenu->GetMenuState(ID_OPTION_ENABLE_REGEX, MF_BYCOMMAND) & MF_CHECKED);
+    pPanelMenu->CheckMenuItem(ID_OPTION_ENABLE_REGEX, MF_BYCOMMAND | (bEnableRegex ? MF_CHECKED : MF_UNCHECKED));
     SetDlgItemText(IDC_LABEL_TEXT_FILTER, bEnableRegex ? _T("Rege&x Filter:") : _T("Te&xt Filter:"));
 
+    if(bEnableRegex && CConfig::GetConfig().IsWildcardEnabled())
+    {
+        CConfig::GetConfig().SetWildcardEnabled(!bEnableRegex);
+        pPanelMenu->CheckMenuItem(ID_OPTION_ENABLE_WILDCARD, MF_BYCOMMAND | (!bEnableRegex ? MF_CHECKED : MF_UNCHECKED));
+    }
+
     CConfig::GetConfig().SetRegexEnabled(bEnableRegex);
+}
+
+void CLogViewDlg::DoEnableWildcardCmd()
+{
+    CMenu* pPanelMenu = GetMenu()->GetSubMenu(3);
+
+    BOOL bEnableWildcard = !(pPanelMenu->GetMenuState(ID_OPTION_ENABLE_WILDCARD, MF_BYCOMMAND) & MF_CHECKED);
+    pPanelMenu->CheckMenuItem(ID_OPTION_ENABLE_WILDCARD, MF_BYCOMMAND | (bEnableWildcard ? MF_CHECKED : MF_UNCHECKED));
+
+    if(bEnableWildcard && CConfig::GetConfig().IsRegexEnabled())
+    {
+        CConfig::GetConfig().SetRegexEnabled(!bEnableWildcard);
+        pPanelMenu->CheckMenuItem(ID_OPTION_ENABLE_REGEX, MF_BYCOMMAND | (!bEnableWildcard ? MF_CHECKED : MF_UNCHECKED));
+    }
+
+    SetDlgItemText(IDC_LABEL_TEXT_FILTER, bEnableWildcard ? _T("&Wildcard Filter:") : _T("Te&xt Filter:"));
+
+    CConfig::GetConfig().SetWildcardEnabled(bEnableWildcard);
 }
 
 void CLogViewDlg::DoOptionOptions()
