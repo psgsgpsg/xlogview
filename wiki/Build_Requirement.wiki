@@ -15,6 +15,6 @@ Requirement for boost includes:
  # Static Link
  # Regex component.
 
-*Boost* is not included in SVN.
+*Boost* used in this project can be downloaded from http://code.google.com/p/xlogview/downloads/detail?name=boost_1.51.0_library.7z
 
 So before you build *LogView*, you need to modify *"Additional Include Directory"* and *"Additional Library Directory"* to indicate the right position of *boost* library.
