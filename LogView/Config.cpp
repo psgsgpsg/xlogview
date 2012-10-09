@@ -3,15 +3,6 @@
 
 #pragma warning(disable: 4996)
 
-
-#define DEFAULT_SHOW_TYPES                  _T("")
-#define DEFAULT_MAX_LOG_COUNT               1000000
-#define DEFAULT_CLEAR_MAX_COUNT_REACHED     TRUE
-#define DEFAULT_TOPMOST                     FALSE
-#define DEFAULT_AUTOSCROLL                  TRUE
-#define DEFAULT_CLEAR_FILTER_WHEN_CLEAR_LOG FALSE
-#define DEFAULT_ENABLE_REGEX                FALSE
-
 CConfig::CConfig(void)
 {
     m_vctShowTypes.push_back(Column_Index);

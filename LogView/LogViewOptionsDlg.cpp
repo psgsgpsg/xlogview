@@ -26,7 +26,7 @@ void CLogViewOptionsDlg::DoDataExchange(CDataExchange* pDX)
 {
     CDialog::DoDataExchange(pDX);
     DDX_Text(pDX, IDC_EDIT_MAX_LOG_COUNT, m_nMaxLogCount);
-	DDV_MinMaxInt(pDX, m_nMaxLogCount, 10, 100000);
+	DDV_MinMaxInt(pDX, m_nMaxLogCount, 10, DEFAULT_MAX_LOG_COUNT);
 }
 
 
