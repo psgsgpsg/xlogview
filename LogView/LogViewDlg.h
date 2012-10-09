@@ -66,6 +66,8 @@ protected:
                             const ThreadOptionData&     vctThread
                             );
 
+    BOOL    SubMatchTextFilter(const LogView::Util::stLogInfo& info);
+
     // 清空ListView的选中项
     void    ClearLogListSelection();
 
@@ -170,6 +172,7 @@ protected:
     void DoOptionTopMostCmd();
     void DoOptionAutoScrollCmd();
     void DoOptionLogOutputDebugStringCmd();
+    void DoEnableRegexCmd();
     void DoOptionOptions();
 
     // 帮助菜单

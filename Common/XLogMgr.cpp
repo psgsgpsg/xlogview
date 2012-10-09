@@ -34,12 +34,12 @@ namespace LogView
             BOOL WriteLog(CFileHelper& file, const stLogInfo& info)
             {
                 return (
-                    !file.Write(info.dwThreadId)             // ThreadId
-                    || !file.Write(info.dwProcId)            // ProcId
-                    || !file.WriteImpl(info.tTime)           // Time
-                    || !file.Write(info.uLevel)              // Level
-                    || !file.Write(info.strFilter.c_str())   // Filter
-                    || !file.Write(info.strLog.c_str())      // Log
+                    file.Write(info.dwThreadId)             // ThreadId
+                    && file.Write(info.dwProcId)            // ProcId
+                    && file.WriteImpl(info.tTime)           // Time
+                    && file.Write(info.uLevel)              // Level
+                    && file.Write(info.strFilter.c_str())   // Filter
+                    && file.Write(info.strLog.c_str())      // Log
                     );
             }
         }
@@ -109,7 +109,11 @@ namespace LogView
                         break;
                 }
 
+                _File.Close();
+
                 bResult = (IteLog == vctLogInfo.end());
+                if(!bResult)
+                    ::DeleteFile(szFile);
 
                 return bResult;
             }

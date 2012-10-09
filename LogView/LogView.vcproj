@@ -45,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)Common&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)Common&quot;;F:\Src\boost_1_51_0\boost_1_51_0"
 				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -69,7 +69,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;"
+				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;;F:\Src\boost_1_51_0\boost_1_51_0\bin\vc9\lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -127,6 +127,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)Common&quot;;F:\Src\boost_1_51_0\boost_1_51_0"
 				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG;_BIND_TO_CURRENT_VCLIBS_VERSION=1"
 				MinimalRebuild="false"
 				RuntimeLibrary="0"
@@ -150,7 +151,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;"
+				AdditionalLibraryDirectories="&quot;$(OutDir)&quot;;F:\Src\boost_1_51_0\boost_1_51_0\bin\vc9\lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"

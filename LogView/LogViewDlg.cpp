@@ -16,6 +16,7 @@
 
 #include "Config.h"
 
+#include <boost/regex.hpp> 
 
 #pragma warning(disable: 4996)
 #pragma warning(disable: 4018)
@@ -143,6 +144,9 @@ BOOL CLogViewDlg::OnInitDialog()
 
         BOOL bAutoScroll = CConfig::GetConfig().GetAutoScroll();
         pPanelMenu->CheckMenuItem(ID_OPTION_AUTOSCROLL, MF_BYCOMMAND | (bAutoScroll ? MF_CHECKED : MF_UNCHECKED));
+
+        BOOL bEnableRegex = CConfig::GetConfig().IsRegexEnabled();
+        pPanelMenu->CheckMenuItem(ID_OPTION_ENABLEREGEX, MF_BYCOMMAND | (bEnableRegex ? MF_CHECKED : MF_UNCHECKED));
     }
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
@@ -431,18 +435,27 @@ void CLogViewDlg::OnGetMinMaxInfo(MINMAXINFO* lpMMI)
 void CLogViewDlg::OnBnClickedBtnDoFilter()
 {
     CString strTextFilter;
-    CString strToken;
     GetDlgItemText(IDC_EDIT_TEXT_FILTER, strTextFilter);
 
     m_vctTextFilter.clear();
 
-    int curPos = 0;
-    strToken = strTextFilter.Tokenize(_T(";"),curPos);
-    while (strToken != _T(""))
+    BOOL bEnableRegex = CConfig::GetConfig().IsRegexEnabled();
+    if(bEnableRegex)
     {
-        m_vctTextFilter.push_back((LPCTSTR)strToken);
-        strToken = strTextFilter.Tokenize(_T(";"), curPos);
-    };
+        if(!strTextFilter.IsEmpty())
+            m_vctTextFilter.push_back((LPCTSTR)strTextFilter);
+    }
+    else
+    {
+        CString strToken;
+        int curPos = 0;
+        strToken = strTextFilter.Tokenize(_T(";"),curPos);
+        while (strToken != _T(""))
+        {
+            m_vctTextFilter.push_back((LPCTSTR)strToken);
+            strToken = strTextFilter.Tokenize(_T(";"), curPos);
+        };
+    }
 
     DoFilter();
     m_bEditTextFilterUnApplied = FALSE;
@@ -707,6 +720,9 @@ BOOL CLogViewDlg::DoCmdId(WORD wId)
     case ID_OPTION_LOGOUTPUTDEBUGSTRING:
         DoOptionLogOutputDebugStringCmd();
         break;
+    case ID_OPTION_ENABLEREGEX:
+        DoEnableRegexCmd();
+        break;
     case ID_OPTION_OPTIONS:
         DoOptionOptions();
         break;
@@ -786,28 +802,8 @@ BOOL CLogViewDlg::MatchFilter(const LogView::Util::stLogInfo& info,
 {
     BOOL bMatch = FALSE;
 
-    // Text Filter
-    if(m_vctTextFilter.size() > 0)
-    {
-        bMatch = FALSE;
-        LogView::Util::XString strTempLog;
-        LogView::Util::XString strTempTextFilter;
-        std::vector<LogView::Util::XString>::const_iterator IteTextFilter = m_vctTextFilter.begin();
-        for(; IteTextFilter != m_vctTextFilter.end(); ++ IteTextFilter)
-        {
-            strTempLog = info.strLog;
-            strTempTextFilter = *IteTextFilter;
-            std::transform(strTempLog.begin(), strTempLog.end(), strTempLog.begin(), ::_totlower);
-            std::transform(strTempTextFilter.begin(), strTempTextFilter.end(), strTempTextFilter.begin(), ::_totlower);
-            if(strTempLog.find(strTempTextFilter) != LogView::Util::XString::npos)
-            {
-                bMatch = TRUE;
-                break;
-            }
-        }
-        if(!bMatch)
-            return FALSE;
-    }
+    if(!SubMatchTextFilter(info))
+        return FALSE;
 
     // Filter
     bMatch = FALSE;
@@ -860,6 +856,46 @@ BOOL CLogViewDlg::MatchFilter(const LogView::Util::stLogInfo& info,
         return FALSE;
 
     return TRUE;
+}
+
+BOOL CLogViewDlg::SubMatchTextFilter(const LogView::Util::stLogInfo& info)
+{
+    BOOL bMatch = TRUE;
+
+    // Text Filter
+    if(m_vctTextFilter.size() <= 0)
+        return TRUE;
+
+    BOOL bEnableRegex = CConfig::GetConfig().IsRegexEnabled();
+    if(bEnableRegex)
+    {
+        boost::wregex expression(m_vctTextFilter[0]);
+        boost::wcmatch what; 
+        bMatch = boost::regex_match(info.strLog.GetData(), what, expression);
+    }
+    else 
+    {
+        bMatch = FALSE;
+        LogView::Util::XString strTempLog;
+        LogView::Util::XString strTempTextFilter;
+        std::vector<LogView::Util::XString>::const_iterator IteTextFilter = m_vctTextFilter.begin();
+        for(; IteTextFilter != m_vctTextFilter.end(); ++ IteTextFilter)
+        {
+            strTempLog = info.strLog;
+            strTempTextFilter = *IteTextFilter;
+            std::transform(strTempLog.begin(), strTempLog.end(), strTempLog.begin(), ::_totlower);
+            std::transform(strTempTextFilter.begin(), strTempTextFilter.end(), strTempTextFilter.begin(), ::_totlower);
+            if(strTempLog.find(strTempTextFilter) != LogView::Util::XString::npos)
+            {
+                bMatch = TRUE;
+                break;
+            }
+        }
+        if(!bMatch)
+            return FALSE;
+    }
+
+    return bMatch;
 }
 
 void CLogViewDlg::ClearLogListSelection()
@@ -1312,6 +1348,18 @@ void CLogViewDlg::DoOptionLogOutputDebugStringCmd()
     }
 
     pPanelMenu->CheckMenuItem(ID_OPTION_LOGOUTPUTDEBUGSTRING, MF_BYCOMMAND | (bChecked ? MF_CHECKED : MF_UNCHECKED));
+}
+
+void CLogViewDlg::DoEnableRegexCmd()
+{
+    CMenu* pPanelMenu = GetMenu()->GetSubMenu(3);
+
+    BOOL bEnableRegex = !CConfig::GetConfig().IsRegexEnabled();
+    pPanelMenu->CheckMenuItem(ID_OPTION_ENABLEREGEX, MF_BYCOMMAND | (bEnableRegex ? MF_CHECKED : MF_UNCHECKED));
+
+    SetDlgItemText(IDC_LABEL_TEXT_FILTER, bEnableRegex ? _T("Rege&x Filter:") : _T("Te&xt Filter:"));
+
+    CConfig::GetConfig().SetRegexEnabled(bEnableRegex);
 }
 
 void CLogViewDlg::DoOptionOptions()
