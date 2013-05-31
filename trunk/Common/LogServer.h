@@ -1,26 +1,25 @@
 #pragma once
 
 #include "LogDef.h"
-#include "LogImplDef.h"
 
 class ILogListener
 {
 public:
     virtual ~ILogListener(){}
 
-    virtual void Release() = 0;
-    virtual void OnLogArrived(const LogView::Util::stLogInfo& info) = 0;
+    virtual void Release(){}
+    virtual void OnLogArrived(const stLogData& log){}
 };
 
-BOOL InitLogServer(LPCTSTR szName);
-void AddLogListener(ILogListener* pListener);
-void DelLogListener(ILogListener* pListener);
-void UnInitLogServer();
-void OnLogArrived(const LogView::Util::stLogInfo& info);
-void ShowExistedLogServer(LPCTSTR szName);
 
-BOOL StartLogOutputDebugString();
-void StopLogOutputDebugString();
+BOOL XStartLogServer(LPCTSTR szName);
+void XStopLogServer();
+void XSetLogListener(ILogListener* pListener);
+void XAppendLog(const stLogData& log, void* pData);
+
+
+BOOL XOpenLogFile(LPCTSTR szFile, NewLogCallback callback, void* pData);
+BOOL XSaveLogFile(LPCTSTR szFile, QueryLogCallback callback, void* pData);
 
 
 // Á´½Ó¿âÄÚÈÝ

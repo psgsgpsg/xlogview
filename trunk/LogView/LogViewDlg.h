@@ -10,6 +10,29 @@
 #include "ProcessPanel.h"
 #include "OptionSelectPanel.h"
 
+#include <vector>
+
+struct stLogUIData
+{
+    DWORD dwThreadId;
+    DWORD dwProcId;
+    SYSTEMTIME timeLog;
+    CString strLevel;
+    CString strFilter;
+    CString strLog;
+};
+typedef std::vector<stLogUIData> LogUIDataVector;
+
+__inline void GetUIData(stLogUIData& uidata, const stLogData& data)
+{
+    uidata.dwThreadId = data.dwThreadId;
+    uidata.dwProcId = data.dwProcId;
+    uidata.timeLog = data.timeLog;
+    uidata.strLevel = data.szLevel;
+    uidata.strFilter = data.szFilter;
+    uidata.strLog = data.szLog;
+}
+
 // CLogViewDlg 对话框
 class CLogViewDlg : public CDialog, public ILogListener
 {
@@ -27,7 +50,7 @@ public:
 public:
     // ILogListener
     virtual void Release();
-    virtual void OnLogArrived(const LogView::Util::stLogInfo& info);
+    virtual void OnLogArrived(const stLogData& info);
 
 protected:
 // 内部方法
@@ -46,8 +69,8 @@ protected:
     void    InitFindDlg();
 
     // 获取某SubItem的文字
-    LogView::Util::XString GetItemText(int nItem, int nSubItem);
-    LogView::Util::XString GetItemText(int nItem, ColumnType type);
+    CString GetItemText(int nItem, int nSubItem);
+    CString GetItemText(int nItem, ColumnType type);
 
     // 执行菜单命令，返回内部是否已处理
     BOOL    DoCmdId(WORD wId);
@@ -56,23 +79,24 @@ protected:
     void    DoFilter();
 
     // 添加一条日志的时候，按照过滤规则进行添加
-    BOOL    AppendLogWithFilter(const LogView::Util::stLogInfo& info);
+    BOOL    AppendLogWithFilter(const stLogUIData& info);
 
     // 一条记录是否符合要求
-    BOOL    MatchFilter(const LogView::Util::stLogInfo& info);
-    BOOL    MatchFilter(const LogView::Util::stLogInfo& info,
-                            const std::vector<LogView::Util::XString>& vctFilter,
-                            const std::vector<UINT>&    vctLevel,
+    BOOL    MatchFilter(const stLogUIData& info);
+    BOOL    MatchFilter(const stLogUIData& info,
+                            const std::vector<CString>& vctFilter,
+                            const std::vector<CString>&    vctLevel,
                             const ThreadOptionData&     vctThread
                             );
 
-    BOOL    SubMatchTextFilter(const LogView::Util::stLogInfo& info);
+    BOOL    SubMatchTextFilter(const stLogUIData& info);
 
     // 清空ListView的选中项
     void    ClearLogListSelection();
 
     // 调整ListView数目时调用
-    void    SetListItemCount(DWORD dwCount);
+    void    UpdateItemCount();
+    void    DelayUpdateItemCount();
 
     // 设置/获取某列Header的参数
     void    SetHeaderParam(int nIndex, LPARAM lParam);
@@ -95,11 +119,12 @@ protected:
     HACCEL          m_hMainAcce;
 
     CListCtrl       m_LogList;
-    LogView::Util::LogInfoVector   m_vctLogInfo;
+    LogUIDataVector m_vctLogInfo;
 
-    LogView::Util::LogInfoResultIndex  m_LogResult;
+    typedef std::vector<size_t> LogInfoResultIndex;
+    LogInfoResultIndex  m_LogResult;
 
-    std::vector<LogView::Util::XString>    m_vctTextFilter;
+    std::vector<CString>    m_vctTextFilter;
 
     CProcessPanel       m_ProcPanel;
     COptionSelectPanel  m_LevelPanel;
@@ -114,6 +139,8 @@ protected:
     BOOL            m_bFindNext;
     BOOL            m_bMatchCase;
     BOOL            m_bMatchWholeWord;
+
+    UINT_PTR        m_uDelayUpdateItemCountTimerId;
 
     HBRUSH          m_hUnAppliedBk;
 
@@ -140,6 +167,7 @@ protected:
     afx_msg void OnGetMinMaxInfo(MINMAXINFO* lpMMI);
     afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
     afx_msg void OnDestroy();
+    afx_msg void OnTimer(UINT_PTR nIDEvent);
 
     afx_msg void OnBnClickedBtnDoFilter();
     afx_msg void OnEnChangeEditTextFilter();
@@ -170,7 +198,6 @@ protected:
     // 选项菜单
     afx_msg void DoOptionTopMostCmd();
     afx_msg void DoOptionAutoScrollCmd();
-    afx_msg void DoOptionLogOutputDebugStringCmd();
     afx_msg void DoEnableRegexCmd();
     afx_msg void DoEnableWildcardCmd();
     afx_msg void DoOptionOptions();

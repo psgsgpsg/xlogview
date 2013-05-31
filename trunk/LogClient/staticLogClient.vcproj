@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)Common&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)Common&quot;;E:\Src\boost_1_53_0"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_BIND_TO_CURRENT_VCLIBS_VERSION=1;_NO_X_OUTPUT_LOG_"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="3"
@@ -62,6 +62,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				OutputFile="$(OutDir)\sdLogClient.lib"
+				AdditionalLibraryDirectories="E:\Src\boost_1_53_0\stage\lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -106,7 +107,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)Common&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)Common&quot;;E:\Src\boost_1_53_0"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_BIND_TO_CURRENT_VCLIBS_VERSION=1;_NO_X_OUTPUT_LOG_"
 				MinimalRebuild="false"
 				RuntimeLibrary="0"
@@ -127,6 +128,7 @@
 			<Tool
 				Name="VCLibrarianTool"
 				OutputFile="$(OutDir)\srLogClient.lib"
+				AdditionalLibraryDirectories="E:\Src\boost_1_53_0\stage\lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -196,61 +198,33 @@
 			Name="Common"
 			>
 			<File
-				RelativePath="..\Common\DataBuffer.cpp"
+				RelativePath="..\Common\LogClient.h"
 				>
 			</File>
 			<File
-				RelativePath="..\Common\DataBuffer.h"
+				RelativePath="..\Common\LogDef.h"
 				>
 			</File>
-			<File
-				RelativePath="..\Common\FileHelper.cpp"
+			<Filter
+				Name="Impl"
 				>
-			</File>
-			<File
-				RelativePath="..\Common\FileHelper.h"
-				>
-			</File>
-			<File
-				RelativePath="..\Common\Lock.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\Common\Lock.h"
-				>
-			</File>
-			<File
-				RelativePath="..\Common\MemBuffer.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\Common\MemBuffer.h"
-				>
-			</File>
-			<File
-				RelativePath="..\Common\XLogMgr.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\Common\XLogMgr.h"
-				>
-			</File>
-			<File
-				RelativePath="..\Common\XString.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\Common\XString.h"
-				>
-			</File>
-			<File
-				RelativePath="..\Common\XStrUtil.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\Common\XStrUtil.h"
-				>
-			</File>
+				<File
+					RelativePath="..\Common\Impl\LogStream.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\Common\Impl\LogStream.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Common\Impl\XLogMgr.cpp"
+					>
+				</File>
+				<File
+					RelativePath="..\Common\Impl\XLogMgr.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 	</Files>
 	<Globals>

@@ -2,149 +2,207 @@
 
 #include "../Common/LogClient.h"
 #include "../Common/LogDef.h"
-#include "Lock.h"
-#include <DataBuffer.h>
-#include <process.h>
+
+#include "../Common/Impl/XLogMgr.h"
+
 #include <queue>
-#include "../Common/XLogMgr.h"
-
-#include <strsafe.h>
-#pragma warning(disable: 4996)
+#include <cassert>
+#include <boost/lockfree/queue.hpp>
 
 //////////////////////////////////////////////////////////////////////////
 
-static TCHAR g_szServerName[MAX_PATH] = LOG_SERVER_PORT_NAME;
-static BOOL  g_bNeedSaveFile = FALSE;
-static DWORD g_dwLocalLogFileLevel = XLOG_LEVEL_ALL;
+namespace
+{
+    BOOL g_bNeedSaveFile = FALSE;
+    LogViewInternal::tstring g_strLocalLogFileLevel = _T("");
+}
 
 //////////////////////////////////////////////////////////////////////////
 
-namespace LogView
+namespace LogViewInternal
 {
     namespace Impl
     {
-        using namespace Util;
 
         HWND FindLogServer()
         {
-            HWND hWnd = FindWindow(LOG_SERVER_PORT_SIG, g_szServerName);
+            HWND hWnd = FindWindow(LOG_SERVER_PORT_SIG, LOG_SERVER_PORT_NAME);
             return hWnd;
         }
 
+        class CLock
+        {
+        public:
+            CLock(bool bManual)
+            {
+                m_Lock = ::CreateEvent(NULL, bManual, TRUE, NULL);
+            }
+            ~CLock()
+            {
+                ::CloseHandle(m_Lock);
+                m_Lock = NULL;
+            }
+            BOOL Wait()
+            {
+                return (WAIT_OBJECT_0 == ::WaitForSingleObject(m_Lock, INFINITE));
+            }
+            void SetSignal(BOOL bSignaled)
+            {
+                if(bSignaled)
+                    ::SetEvent(m_Lock);
+                else
+                    ::ResetEvent(m_Lock);
+            }
+        private:
+            HANDLE  m_Lock;
+        };
+
+        class CAutoLock
+        {
+        public:
+            CAutoLock(CLock* pLock)
+            {
+                m_pLock = pLock;
+                m_pLock->Wait();
+            }
+            ~CAutoLock()
+            {
+                m_pLock->SetSignal(TRUE);
+            }
+        private:
+            CLock*  m_pLock;
+        };
+
+        class CLogQueue
+        {
+        public:
+            CLogQueue() : m_EmptyLock(true), m_DataLock(false)
+            {
+                m_EmptyLock.SetSignal(FALSE);
+            }
+            ~CLogQueue()
+            {
+            }
+            void Destroy()
+            {
+                m_EmptyLock.SetSignal(TRUE);
+            }
+            void PushLog(LogViewInternal::stLogInfo& log)
+            {
+                CAutoLock lock(&m_DataLock);
+
+                m_LogQueue.push(log);
+                m_EmptyLock.SetSignal(TRUE);
+            }
+            void PopLog(LogViewInternal::stLogInfo& log)
+            {
+                CAutoLock lock(&m_DataLock);
+
+                log = m_LogQueue.front();
+                m_LogQueue.pop();
+                if(m_LogQueue.empty())
+                    m_EmptyLock.SetSignal(FALSE);
+            }
+            BOOL Wait()
+            {
+                return m_EmptyLock.Wait();
+            }
+
+        private:
+            typedef std::queue<LogViewInternal::stLogInfo> LogQueue;
+            LogQueue    m_LogQueue;
+            CLock       m_DataLock;
+            CLock       m_EmptyLock;
+        };
 
         class CLogBuffer
         {
-            struct stBufferInfo
-            {
-                XString buffer;
-                DWORD    dwThreadId;
-            };
-
             CLogBuffer(const CLogBuffer&);
             CLogBuffer& operator =(const CLogBuffer&);
         public:
-            CLogBuffer(){}
+            CLogBuffer()
+            {
+                m_bStopLogThread = FALSE;
+                m_hLogThread = (HANDLE)_beginthreadex(0, 0, &LogThreadProc, (void*)this, 0, 0);
+            }
             ~CLogBuffer()
             {
                 if(m_hLogThread != NULL)
                 {
-                    ::TerminateThread(m_hLogThread, 0);
+                    m_bStopLogThread = TRUE;
+                    m_LogQueue.Destroy();
+
+                    ::WaitForSingleObject(m_hLogThread, INFINITE);
+                    ::CloseHandle(m_hLogThread);
                     m_hLogThread = NULL;
                 }
             }
 
-            void SetOutputServer(LPCTSTR szName)
+            void SetOutputLogPath(LPCTSTR szPath, LPCTSTR szLevel)
             {
-                AI_AUTO_LOCK(&m_Lock);
-                _tcsncpy(g_szServerName, szName, MAX_PATH);
+                if(szPath == NULL || szLevel == NULL)
+                {
+                    g_bNeedSaveFile = FALSE;
+                }
+                else
+                {
+                    g_strLocalLogFileLevel = szLevel;
+                    g_bNeedSaveFile = m_LogAppender.OpenXLog(szPath, TRUE);
+                }
             }
 
-            void SetOutputLogPath(LPCTSTR szPath, DWORD dwLogLevel)
+            void PushLog(LogViewInternal::stLogInfo& log)
             {
-                AI_AUTO_LOCK(&m_Lock);
-                g_dwLocalLogFileLevel = dwLogLevel;
-                g_bNeedSaveFile = (g_dwLocalLogFileLevel != XLOG_LEVEL_NONE);
-
-                m_LogAppender.OpenXLog(szPath, TRUE);
-            }
-
-            void PushLog(XString& buffer)
-            {
-                stBufferInfo info;
-                info.buffer = buffer;
-                info.dwThreadId = ::GetCurrentThreadId();
-
-                HWND hWnd = FindLogServer();
-                COPYDATASTRUCT CopyData = {0};
-                CopyData.dwData = info.dwThreadId;
-                CopyData.cbData = (info.buffer.size() + 1) * sizeof(TCHAR);
-                CopyData.lpData = (LPVOID)info.buffer.c_str();
-                ::SendMessage(hWnd, WM_COPYDATA, (WPARAM)hWnd, (LPARAM)&CopyData);
+                m_LogQueue.PushLog(log);
             }
 
         protected:
             static unsigned WINAPI LogThreadProc(void* pParam)
             {
+                HWND hLogServerWnd = FindLogServer();
                 CLogBuffer* pLogBuffer = (CLogBuffer*)pParam;
-                pLogBuffer->OnLogThread();
+                LogViewInternal::stLogInfo log;
+
+                while(pLogBuffer->m_LogQueue.Wait() && !pLogBuffer->m_bStopLogThread)
+                {
+                    pLogBuffer->m_LogQueue.PopLog(log);
+
+                    if(!::IsWindow(hLogServerWnd))
+                        hLogServerWnd = FindLogServer();
+
+                    if(hLogServerWnd != NULL)
+                    {
+                        COPYDATASTRUCT CopyData = {0};
+                        CopyData.dwData = LOG_IPC_MAGIC_NUM;
+                        CopyData.cbData = log.dwRealSize;
+                        CopyData.lpData = log.pBuffer;
+                        ::SendMessage(hLogServerWnd, WM_COPYDATA, (WPARAM)hLogServerWnd, (LPARAM)&CopyData);
+                    }
+                    if(g_bNeedSaveFile)
+                    {
+                        BOOL bNeedSave = (g_strLocalLogFileLevel == _T("*"));
+                        if(!bNeedSave)
+                        {
+                            LPCTSTR szLevel = LogViewInternal::LogInfo::GetLogLevel(log);
+                            bNeedSave = (g_strLocalLogFileLevel.find(szLevel) != LogViewInternal::tstring::npos);
+                        }
+                        if(bNeedSave)
+                            pLogBuffer->m_LogAppender.AppendLog(log);
+                    }
+
+                    LogViewInternal::LogInfo::ReleaseLog(log);
+                }
                 return 0;
             }
 
-            void OnLogThread()
-            {
-                while(TRUE)
-                {
-                    Sleep(200);
-
-                    {
-                        AI_AUTO_LOCK(&m_Lock);
-
-                        if(m_LogBufferQueue.size() > 0)
-                        {
-                            HWND hWnd = FindLogServer();
-
-                            if(hWnd == NULL && !g_bNeedSaveFile)
-                            {
-                                while(!m_LogBufferQueue.empty())
-                                    m_LogBufferQueue.pop();
-                                continue;
-                            }
-
-                            size_t nLogCount = 0;
-                            for(size_t nLogCount=0; nLogCount<10 && !m_LogBufferQueue.empty(); ++ nLogCount)
-                            {
-                                stBufferInfo& info = m_LogBufferQueue.front();
-                                if(hWnd != NULL)
-                                {
-                                    COPYDATASTRUCT CopyData = {0};
-                                    CopyData.dwData = info.dwThreadId;
-                                    CopyData.cbData = (info.buffer.size() + 1) * sizeof(TCHAR);
-                                    CopyData.lpData = (LPVOID)info.buffer.c_str();
-                                    ::SendMessage(hWnd, WM_COPYDATA, (WPARAM)hWnd, (LPARAM)&CopyData);
-                                }
-
-                                if(g_bNeedSaveFile)
-                                {
-                                    stLogInfo log;
-                                    CDataBuffer Data;
-                                    Data.Reset(info.buffer.GetData(), info.buffer.Length());
-                                    Data >> log.dwProcId >> log.dwThreadId >> log.uLevel >> log.strFilter >> log.strLog;
-                                    m_LogAppender.AppendLog(log);
-                                }
-                                m_LogBufferQueue.pop();
-                            }
-                        }
-                    }
-                }
-            }
-
         protected:
-            typedef std::queue<stBufferInfo> LogBufferQueue;
-            LogBufferQueue  m_LogBufferQueue;
+            CLogQueue       m_LogQueue;
 
+            HANDLE          m_Lock;
+            volatile BOOL   m_bStopLogThread;
             HANDLE          m_hLogThread;
-            CAiSection      m_Lock;
-            XLogAppender    m_LogAppender;
+
+            LogViewInternal::XLogAppender    m_LogAppender;
         };
     }
 }
@@ -152,49 +210,35 @@ namespace LogView
 
 //////////////////////////////////////////////////////////////////////////
 
-LogView::Impl::CLogBuffer& GetLogBuffer()
+LogViewInternal::Impl::CLogBuffer& GetLogBuffer()
 {
-    static LogView::Impl::CLogBuffer g_LogBuffer;
+    static LogViewInternal::Impl::CLogBuffer g_LogBuffer;
     return g_LogBuffer;
 }
 
-// 设置接收服务器名字
-void SetOutputServerImpl(LPCTSTR szName)
-{
-    GetLogBuffer().SetOutputServer(szName);
-}
-
 // 设置显示Log保存文件路径和级别
-void SetOutputLogPathImpl(LPCTSTR szPath, DWORD dwLogLevel)
+void SetOutputLogPathImpl(LPCTSTR szPath, LPCTSTR szLevel)
 {
-    GetLogBuffer().SetOutputLogPath(szPath, dwLogLevel);
+    GetLogBuffer().SetOutputLogPath(szPath, szLevel);
 }
 
 //////////////////////////////////////////////////////////////////////////
 // 打印Log
-BOOL OutputLogImpl(UINT uLevel, LPCTSTR szFilter, LPCTSTR szFormat, ...)
+BOOL OutputLogImpl(LPCTSTR szLevel, LPCTSTR szFilter, LPCTSTR szFormat, ...)
 {
-    if(g_dwLocalLogFileLevel == XLOG_LEVEL_NONE)
-        return TRUE;
+    LogViewInternal::stLogInfo log;
+    LPTSTR szLog = LogViewInternal::LogInfo::GetLogBuffer(log, szLevel, szFilter);
 
     va_list vlist;
     va_start(vlist, szFormat);
 
-    TCHAR szBuffer[MAX_LOG_LENGTH] = {0};
-    HRESULT hResult = StringCchVPrintf(szBuffer, MAX_LOG_LENGTH, szFormat, vlist);
+    HRESULT hResult = StringCchVPrintf(szLog, MAX_LOG_LENGTH, szFormat, vlist);
     if(!SUCCEEDED(hResult))
         return FALSE;
 
-    std::wstring str1;
-    LogView::Util::XString str2;
-    LogView::Util::CDataBuffer data;
+    LogViewInternal::LogInfo::SetLog(log, szLog);
 
-    data << GetCurrentThreadId();
-    data << GetCurrentProcessId();
-    data << uLevel << szFilter << szBuffer;
-
-    LogView::Util::XString strMsg = data.ToString();
-    GetLogBuffer().PushLog(strMsg);
+    GetLogBuffer().PushLog(log);
 
     return TRUE;
 }
