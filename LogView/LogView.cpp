@@ -53,10 +53,10 @@ BOOL CLogViewApp::InitInstance()
     CConfig::GetConfig().ReloadConfig();
 
     // 初始化日志相关内容
-    InitLogServer(LOG_SERVER_PORT_NAME);
+    XStartLogServer(LOG_SERVER_PORT_NAME);
 
     CLogViewDlg dlg;
-    AddLogListener(&dlg);
+    XSetLogListener(&dlg);
 
 	m_pMainWnd = &dlg;
 	INT_PTR nResponse = dlg.DoModal();
@@ -66,8 +66,7 @@ BOOL CLogViewApp::InitInstance()
 
 int CLogViewApp::ExitInstance()
 {
-    ShowExistedLogServer(LOG_SERVER_PORT_NAME);
-    UnInitLogServer();
+    XStopLogServer();
 
     CConfig::GetConfig().SaveConfig();
 

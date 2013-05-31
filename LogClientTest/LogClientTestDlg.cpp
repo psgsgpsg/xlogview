@@ -6,7 +6,6 @@
 #include "LogClientTest.h"
 #include "LogClientTestDlg.h"
 
-#include "../Common/XString.h"
 #include <string>
 
 #ifdef _DEBUG
@@ -67,7 +66,6 @@ BEGIN_MESSAGE_MAP(CLogClientTestDlg, CDialog)
 	ON_WM_QUERYDRAGICON()
 	//}}AFX_MSG_MAP
     ON_BN_CLICKED(IDOK, &CLogClientTestDlg::OnBnClickedOk)
-    ON_BN_CLICKED(IDC_BTN_OUTPUT, &CLogClientTestDlg::OnBnClickedBtnOutput)
 END_MESSAGE_MAP()
 
 
@@ -158,7 +156,8 @@ HCURSOR CLogClientTestDlg::OnQueryDragIcon()
 
 void CLogClientTestDlg::OnBnClickedOk()
 {
-    int nLevel = GetDlgItemInt(IDC_EDIT_LEVEL);
+    CString strLevel;
+    GetDlgItemText(IDC_EDIT_LEVEL, strLevel);
     CString strFilter;
     GetDlgItemText(IDC_EDIT_FILTER, strFilter);
     CString strLog;
@@ -171,20 +170,6 @@ void CLogClientTestDlg::OnBnClickedOk()
     int nEnd = bRepeat ? 50 : 1;
     for(int i=0; i<nEnd; ++ i)
     {
-        XOutputLog(nLevel, strFilter, _T("(%d)%s"), i, (LPCTSTR)strLog);
-    }
-}
-
-void CLogClientTestDlg::OnBnClickedBtnOutput()
-{
-    CString strLog;
-    GetDlgItemText(IDC_EDIT_LOG, strLog);
-
-    BOOL bRepeat = IsDlgButtonChecked(IDC_CHKBTN_REPEAT);
-
-    int nEnd = bRepeat ? 50 : 1;
-    for(int i=0; i<nEnd; ++ i)
-    {
-        OutputDebugString(strLog);
+        XLog(strLevel, strFilter, _T("(%d)%s"), i, (LPCTSTR)strLog);
     }
 }

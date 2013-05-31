@@ -8,9 +8,8 @@
 
 #include <algorithm>
 #include "AboutDlg.h"
-#include "../Common/XStrUtil.h"
 
-#include "../Common/XLogMgr.h"
+
 #include "LogViewOptionsDlg.h"
 #include <time.h>
 
@@ -57,6 +56,8 @@ CLogViewDlg::CLogViewDlg(CWnd* pParent /*=NULL*/)
     m_bMatchCase = FALSE;
     m_bMatchWholeWord = FALSE;
 
+    m_uDelayUpdateItemCountTimerId = 0;
+
     m_hUnAppliedBk = CreateSolidBrush(BKCOLOR_TEXT_FILTER_UN_APPLIED);
 }
 
@@ -76,6 +77,7 @@ BEGIN_MESSAGE_MAP(CLogViewDlg, CDialog)
     ON_WM_GETMINMAXINFO()
     ON_WM_CTLCOLOR()
     ON_WM_DESTROY()
+    ON_WM_TIMER()
 
     ON_NOTIFY(LVN_GETDISPINFO, IDC_LIST_LOG, &CLogViewDlg::OnLvnGetdispinfoListLog)
     ON_BN_CLICKED(IDC_BTN_DO_FILTER, &CLogViewDlg::OnBnClickedBtnDoFilter)
@@ -111,7 +113,6 @@ BEGIN_MESSAGE_MAP(CLogViewDlg, CDialog)
     // 选项菜单
     ON_COMMAND(ID_OPTION_TOPMOST, &CLogViewDlg::DoOptionTopMostCmd)
     ON_COMMAND(ID_OPTION_AUTOSCROLL, &CLogViewDlg::DoOptionAutoScrollCmd)
-    ON_COMMAND(ID_OPTION_LOGOUTPUTDEBUGSTRING, &CLogViewDlg::DoOptionLogOutputDebugStringCmd)
     ON_COMMAND(ID_OPTION_ENABLE_REGEX, &CLogViewDlg::DoEnableRegexCmd)
     ON_COMMAND(ID_OPTION_ENABLE_WILDCARD, &CLogViewDlg::DoEnableWildcardCmd)
     ON_COMMAND(ID_OPTION_OPTIONS, &CLogViewDlg::DoOptionOptions)
@@ -250,8 +251,8 @@ void CLogViewDlg::OnLvnGetdispinfoListLog(NMHDR *pNMHDR, LRESULT *pResult)
 
     if(pDispInfo != NULL && (_Item.mask & LVIF_TEXT) == LVIF_TEXT)
     {
-        LogView::Util::XString strText = GetItemText(_Item.iItem, _Item.iSubItem);
-        _tcsncpy(_Item.pszText, strText.c_str(), _Item.cchTextMax);
+        CString strText = GetItemText(_Item.iItem, _Item.iSubItem);
+        _tcsncpy(_Item.pszText, strText, _Item.cchTextMax);
         _Item.pszText[_Item.cchTextMax - 1] = 0;
     }
 
@@ -389,7 +390,7 @@ LRESULT CLogViewDlg::OnFindReplaceMsg(WPARAM wParam, LPARAM lParam)
                 break;
         }
         
-        CString strLog = GetItemText(i, Column_Log).c_str();
+        CString strLog = GetItemText(i, Column_Log);
 
         if(m_bMatchCase)
         {
@@ -517,7 +518,7 @@ void CLogViewDlg::Release()
     m_vctLogInfo.clear();
 }
 
-void CLogViewDlg::OnLogArrived(const LogView::Util::stLogInfo& info)
+void CLogViewDlg::OnLogArrived(const stLogData& info)
 {
     if(GetSafeHwnd() == NULL || !IsWindow(GetSafeHwnd()))
         return;
@@ -532,17 +533,15 @@ void CLogViewDlg::OnLogArrived(const LogView::Util::stLogInfo& info)
             return;
     }
 
-    CString strLevel;
-    strLevel.Format(_T("%u"), info.uLevel);
-
     // 过滤
     m_ProcPanel.AddOption(info.dwThreadId, info.dwProcId, 0);
-    m_LevelPanel.AddOption(strLevel, info.uLevel);
-    m_FilterPanel.AddOption(info.strFilter.c_str(), 0);
+    m_LevelPanel.AddOption(info.szLevel, 0);
+    m_FilterPanel.AddOption(info.szFilter, 0);
 
-    BOOL bAppended = AppendLogWithFilter(info);
-    if(bAppended && CConfig::GetConfig().GetAutoScroll())
-        m_LogList.EnsureVisible(m_LogList.GetItemCount() - 1, FALSE);
+    stLogUIData uidata;
+    GetUIData(uidata, info);
+
+    BOOL bAppended = AppendLogWithFilter(uidata);
 
     UpdateStatusBar();
 }
@@ -647,50 +646,50 @@ void CLogViewDlg::InitFindDlg()
     m_pFindDlg->Create(TRUE, _T(""), _T(""), FR_DOWN, this);
 }
 
-LogView::Util::XString CLogViewDlg::GetItemText(int nItem, int nSubItem)
+CString CLogViewDlg::GetItemText(int nItem, int nSubItem)
 {
     if(nItem > m_LogResult.size() || m_LogResult[nItem] >= m_vctLogInfo.size())
-        return LogView::Util::XString();
+        return CString();
 
     ColumnType type = (ColumnType)GetHeaderParam(nSubItem);
     return GetItemText(nItem, type);
 }
 
-LogView::Util::XString CLogViewDlg::GetItemText(int nItem, ColumnType type)
+CString CLogViewDlg::GetItemText(int nItem, ColumnType type)
 {
-    LogView::Util::XString strResult;
-    const LogView::Util::stLogInfo& info = m_vctLogInfo[m_LogResult[nItem]];
+    CString strResult;
+    const stLogUIData& info = m_vctLogInfo[m_LogResult[nItem]];
 
     switch(type)
     {
     case Column_Index:
         {
             // #
-            strResult = LogView::Util::XString(_T("%1")).arg(nItem);
+            strResult.Format(_T("%d"), nItem);
             break;
         }
     case Column_Time:
         {
             // Time
-            strResult.Format(_T("%02d:%02d:%02d.%03d"), info.tTime.uHour, info.tTime.uMin, info.tTime.uSecond, info.tTime.uMilli);
+            strResult.Format(_T("%02d:%02d:%02d.%03d"), info.timeLog.wHour, info.timeLog.wMinute, info.timeLog.wSecond, info.timeLog.wMilliseconds);
             break;
         }
     case Column_ProcId:
         {
             // Proc
-            strResult = LogView::Util::XString(_T("%1")).arg(info.dwProcId);
+            strResult.Format(_T("%u"), info.dwProcId);
             break;
         }
     case Column_ThreadId:
         {
             // Thread
-            strResult = LogView::Util::XString(_T("%1")).arg(info.dwThreadId);
+            strResult.Format(_T("%u"), info.dwThreadId);
             break;
         }
     case Column_Level:
         {
             // Level
-            strResult = LogView::Util::XString(_T("%1")).arg(info.uLevel);
+            strResult.Format(_T("%s"), (LPCTSTR)info.strLevel);
             break;
         }
     case Column_Filter:
@@ -719,29 +718,29 @@ void CLogViewDlg::DoFilter()
 {
     m_LogResult.clear();
 
-    std::vector<LogView::Util::XString> vctFilter;
-    std::vector<UINT>    vctLevel;
+    std::vector<CString> vctFilter;
+    std::vector<CString>    vctLevel;
     ThreadOptionData     vctThread;
 
     m_FilterPanel.GetOptionsText(vctFilter);
-    m_LevelPanel.GetOptionsParam(vctLevel);
+    m_LevelPanel.GetOptionsText(vctLevel);
     m_ProcPanel.GetOptionsThread(vctThread);
 
     size_t uTotalLogCount = m_vctLogInfo.size();
     for(size_t i=0; i<uTotalLogCount; ++ i)
     {
-        const LogView::Util::stLogInfo& info = m_vctLogInfo[i];
+        const stLogUIData& info = m_vctLogInfo[i];
         if(MatchFilter(info, vctFilter, vctLevel, vctThread))
         {
             m_LogResult.push_back(i);
         }
     }
 
-    SetListItemCount(m_LogResult.size());
+    DelayUpdateItemCount();
 }
 
 // 添加一条日志的时候，按照过滤规则进行添加
-BOOL CLogViewDlg::AppendLogWithFilter(const LogView::Util::stLogInfo& info)
+BOOL CLogViewDlg::AppendLogWithFilter(const stLogUIData& info)
 {
     m_vctLogInfo.push_back(info);
 
@@ -749,29 +748,29 @@ BOOL CLogViewDlg::AppendLogWithFilter(const LogView::Util::stLogInfo& info)
     if(MatchFilter(info))
     {
         m_LogResult.push_back(m_vctLogInfo.size() - 1);
-        SetListItemCount(m_LogResult.size()); 
+        DelayUpdateItemCount();
     }
 
     return TRUE;
 }
 
 // 一条记录是否符合要求
-BOOL CLogViewDlg::MatchFilter(const LogView::Util::stLogInfo& info)
+BOOL CLogViewDlg::MatchFilter(const stLogUIData& info)
 {
-    std::vector<LogView::Util::XString> vctFilter;
-    std::vector<UINT>    vctLevel;
+    std::vector<CString> vctFilter;
+    std::vector<CString> vctLevel;
     ThreadOptionData    vctThread;
 
     m_FilterPanel.GetOptionsText(vctFilter);
-    m_LevelPanel.GetOptionsParam(vctLevel);
+    m_LevelPanel.GetOptionsText(vctLevel);
     m_ProcPanel.GetOptionsThread(vctThread);
 
     return MatchFilter(info, vctFilter, vctLevel, vctThread);
 }
 
-BOOL CLogViewDlg::MatchFilter(const LogView::Util::stLogInfo& info,
-                    const std::vector<LogView::Util::XString>& vctFilter,
-                    const std::vector<UINT>&    vctLevel,
+BOOL CLogViewDlg::MatchFilter(const stLogUIData& info,
+                    const std::vector<CString>& vctFilter,
+                    const std::vector<CString>&    vctLevel,
                     const ThreadOptionData&     vctThread)
 {
     BOOL bMatch = FALSE;
@@ -781,11 +780,11 @@ BOOL CLogViewDlg::MatchFilter(const LogView::Util::stLogInfo& info,
 
     // Filter
     bMatch = FALSE;
-    std::vector<LogView::Util::XString>::const_iterator IteFilter = vctFilter.begin();
+    std::vector<CString>::const_iterator IteFilter = vctFilter.begin();
     for(; IteFilter != vctFilter.end(); ++ IteFilter)
     {
-        const LogView::Util::XString& strFilter = *IteFilter;
-        if(_tcsicmp(strFilter.c_str(), info.strFilter.c_str()) == 0)
+        const CString& strFilter = *IteFilter;
+        if(_tcsicmp(strFilter, info.strFilter) == 0)
         {
             bMatch = TRUE;
             break;
@@ -796,11 +795,11 @@ BOOL CLogViewDlg::MatchFilter(const LogView::Util::stLogInfo& info,
 
     // Level
     bMatch = FALSE;
-    std::vector<UINT>::const_iterator IteLevel = vctLevel.begin();
+    std::vector<CString>::const_iterator IteLevel = vctLevel.begin();
     for(; IteLevel != vctLevel.end(); ++ IteLevel)
     {
-        const UINT& uLevel = *IteLevel;
-        if(uLevel == info.uLevel)
+        const CString& strLevel = *IteLevel;
+        if(strLevel == info.strLevel)
         {
             bMatch = TRUE;
             break;
@@ -832,7 +831,7 @@ BOOL CLogViewDlg::MatchFilter(const LogView::Util::stLogInfo& info,
     return TRUE;
 }
 
-BOOL CLogViewDlg::SubMatchTextFilter(const LogView::Util::stLogInfo& info)
+BOOL CLogViewDlg::SubMatchTextFilter(const stLogUIData& info)
 {
     BOOL bMatch = TRUE;
 
@@ -848,7 +847,7 @@ BOOL CLogViewDlg::SubMatchTextFilter(const LogView::Util::stLogInfo& info)
         {
             boost::wregex expression(m_vctTextFilter[0]);
             boost::wcmatch what; 
-            bMatch = boost::regex_match(info.strLog.GetData(), what, expression);
+            bMatch = boost::regex_match((LPCTSTR)info.strLog, what, expression);
         }
         catch (...)
         {
@@ -858,12 +857,12 @@ BOOL CLogViewDlg::SubMatchTextFilter(const LogView::Util::stLogInfo& info)
     else if(bEnableWildcard)
     {
         bMatch = FALSE;
-        LogView::Util::XString strTempLog;
-        LogView::Util::XString strTempTextFilter;
-        std::vector<LogView::Util::XString>::const_iterator IteTextFilter = m_vctTextFilter.begin();
+        CString strTempLog;
+        CString strTempTextFilter;
+        std::vector<CString>::const_iterator IteTextFilter = m_vctTextFilter.begin();
         for(; IteTextFilter != m_vctTextFilter.end(); ++ IteTextFilter)
         {
-            if(WidecardMatch(info.strLog.c_str(), IteTextFilter->c_str(), false))
+            if(WidecardMatch(info.strLog, *IteTextFilter, false))
             {
                 bMatch = TRUE;
                 break;
@@ -875,16 +874,16 @@ BOOL CLogViewDlg::SubMatchTextFilter(const LogView::Util::stLogInfo& info)
     else 
     {
         bMatch = FALSE;
-        LogView::Util::XString strTempLog;
-        LogView::Util::XString strTempTextFilter;
-        std::vector<LogView::Util::XString>::const_iterator IteTextFilter = m_vctTextFilter.begin();
+        CString strTempLog;
+        CString strTempTextFilter;
+        std::vector<CString>::const_iterator IteTextFilter = m_vctTextFilter.begin();
         for(; IteTextFilter != m_vctTextFilter.end(); ++ IteTextFilter)
         {
             strTempLog = info.strLog;
             strTempTextFilter = *IteTextFilter;
-            std::transform(strTempLog.begin(), strTempLog.end(), strTempLog.begin(), ::_totlower);
-            std::transform(strTempTextFilter.begin(), strTempTextFilter.end(), strTempTextFilter.begin(), ::_totlower);
-            if(strTempLog.find(strTempTextFilter) != LogView::Util::XString::npos)
+            strTempLog.MakeLower();
+            strTempTextFilter.MakeLower();
+            if(strTempLog.Find(strTempTextFilter) != -1)
             {
                 bMatch = TRUE;
                 break;
@@ -907,12 +906,24 @@ void CLogViewDlg::ClearLogListSelection()
 }
 
 // 调整ListView数目时调用
-void CLogViewDlg::SetListItemCount(DWORD dwCount)
+void CLogViewDlg::UpdateItemCount()
 {
-    m_LogList.SetItemCount(dwCount);
+    m_LogList.SetItemCount(m_LogResult.size());
     UpdateStatusBar();
+
+    int nItemCount = m_LogList.GetItemCount();
+    if(nItemCount > 0)
+    {
+        if(CConfig::GetConfig().GetAutoScroll())
+            m_LogList.EnsureVisible(nItemCount - 1, FALSE);
+    }
 }
 
+void CLogViewDlg::DelayUpdateItemCount()
+{
+    if(m_uDelayUpdateItemCountTimerId == 0)
+        m_uDelayUpdateItemCountTimerId = SetTimer(0x100, 200, NULL);
+}
 
 // 设置/获取某列Header的参数
 void CLogViewDlg::SetHeaderParam(int nIndex, LPARAM lParam)
@@ -1122,12 +1133,28 @@ void CLogViewDlg::DoFileOpenCmd()
     if(Dlg.DoModal() == IDOK)
     {
         CString strPathName = Dlg.GetPathName();
-        if(!LogView::Util::XLogMgr::OpenXLog(strPathName, &::OnLogArrived))
+        if(!XOpenLogFile(strPathName, &::XAppendLog, NULL))
         {
             AfxMessageBox(_T("Failed to Load File.\r\nWrong Version of LogView?"), MB_OK | MB_ICONWARNING);
         }
     }
 
+}
+
+BOOL ListViewQueryLogCallback(int nIndex, stLogData& log, void* pData)
+{
+    LogUIDataVector* vctData = (LogUIDataVector*)pData;
+    if(nIndex < 0 || nIndex >= vctData->size())
+        return FALSE;
+
+    stLogUIData& data = vctData->at(nIndex);
+    log.dwProcId = data.dwProcId;
+    log.dwThreadId = data.dwThreadId;
+    log.szFilter = data.strFilter;
+    log.szLevel = data.strLevel;
+    log.szLog = data.strLog;
+    log.timeLog = data.timeLog;
+    return TRUE;
 }
 
 void CLogViewDlg::DoFileSaveCmd()
@@ -1156,7 +1183,8 @@ void CLogViewDlg::DoFileSaveCmd()
         {
             strPathName += _T(".xlog");
         }
-        if(!LogView::Util::XLogMgr::SaveXLog(m_vctLogInfo, strPathName))
+
+        if(!XSaveLogFile(strPathName, ListViewQueryLogCallback, (void*)&m_vctLogInfo))
         {
             AfxMessageBox(_T("Failed to Save File.\r\nCheck if the file is valid?"), MB_OK | MB_ICONWARNING);
         }
@@ -1174,7 +1202,7 @@ void CLogViewDlg::DoEditClearCmd()
 {
     m_LogResult.clear();
     m_vctLogInfo.clear();
-    SetListItemCount(0);
+    UpdateItemCount();
 
     m_ProcPanel.RemoveAllOptions();
     m_LevelPanel.RemoveAllOptions();
@@ -1191,7 +1219,7 @@ void CLogViewDlg::DoEditCopyCmd()
     int nItem = -1;
     while( (nItem = m_LogList.GetNextItem(nItem, LVNI_SELECTED)) != -1)
     {
-        strLog      = GetItemText(nItem, Column_Log).c_str();
+        strLog = GetItemText(nItem, Column_Log);
         strData += strLog + _T("\r\n");
     }
 
@@ -1225,13 +1253,13 @@ void CLogViewDlg::DoEditCopyWholeLineCmd()
     int nItem = -1;
     while( (nItem = m_LogList.GetNextItem(nItem, LVNI_SELECTED)) != -1)
     {
-        strIndex    = GetItemText(nItem, Column_Index).c_str();
-        strTime     = GetItemText(nItem, Column_Time).c_str();
-        strProc     = GetItemText(nItem, Column_ProcId).c_str();
-        strThread   = GetItemText(nItem, Column_ThreadId).c_str();
-        strLevel    = GetItemText(nItem, Column_Level).c_str();
-        strFilter   = GetItemText(nItem, Column_Filter).c_str();
-        strLog      = GetItemText(nItem, Column_Log).c_str();
+        strIndex    = GetItemText(nItem, Column_Index);
+        strTime     = GetItemText(nItem, Column_Time);
+        strProc     = GetItemText(nItem, Column_ProcId);
+        strThread   = GetItemText(nItem, Column_ThreadId);
+        strLevel    = GetItemText(nItem, Column_Level);
+        strFilter   = GetItemText(nItem, Column_Filter);
+        strLog      = GetItemText(nItem, Column_Log);
 
         strData += strIndex + _T("\t");
         strData += strTime + _T("\t");
@@ -1317,36 +1345,6 @@ void CLogViewDlg::DoOptionAutoScrollCmd()
     pPanelMenu->CheckMenuItem(ID_OPTION_AUTOSCROLL, MF_BYCOMMAND | (bAutoScroll ? MF_CHECKED : MF_UNCHECKED));
 
     CConfig::GetConfig().SetAutoScroll(bAutoScroll);
-}
-
-void CLogViewDlg::DoOptionLogOutputDebugStringCmd()
-{
-    CMenu* pPanelMenu = GetMenu()->GetSubMenu(3);
-
-    BOOL bChecked = ((pPanelMenu->GetMenuState(ID_OPTION_LOGOUTPUTDEBUGSTRING, MF_BYCOMMAND) & MF_CHECKED) == MF_CHECKED);
-
-    if(!bChecked)
-    {
-        if(AfxMessageBox(_T("This feature is under testing\r\nare you sure to use this?"), MB_OKCANCEL | MB_ICONWARNING) != IDOK)
-            return;
-
-        if(IsDebuggerPresent())
-        {
-            AfxMessageBox(_T("This Option can't take effect when LogView is debugged."), MB_OK | MB_ICONWARNING);
-            bChecked = FALSE;
-            return;
-        }
-        bChecked = StartLogOutputDebugString();
-        if(!bChecked)
-            AfxMessageBox(_T("Start Debug Output Log Failed\r\nCheck if there is tools of the same kind, like DebugView, etc."), MB_OK | MB_ICONWARNING);
-    }
-    else
-    {
-        bChecked = FALSE;
-        StopLogOutputDebugString();
-    }
-
-    pPanelMenu->CheckMenuItem(ID_OPTION_LOGOUTPUTDEBUGSTRING, MF_BYCOMMAND | (bChecked ? MF_CHECKED : MF_UNCHECKED));
 }
 
 void CLogViewDlg::DoEnableRegexCmd()
@@ -1453,6 +1451,21 @@ void CLogViewDlg::OnDestroy()
 
     m_pFindDlg = NULL;
     __super::OnDestroy();
+}
+
+void CLogViewDlg::OnTimer(UINT_PTR nIDEvent)
+{
+    if(m_uDelayUpdateItemCountTimerId == nIDEvent)
+    {
+        KillTimer(m_uDelayUpdateItemCountTimerId);
+        m_uDelayUpdateItemCountTimerId = 0;
+
+        UpdateItemCount();
+    }
+    else
+    {
+        __super::OnTimer(nIDEvent);
+    }
 }
 
 void CLogViewDlg::OnNMRClickListLog(NMHDR *pNMHDR, LRESULT *pResult)

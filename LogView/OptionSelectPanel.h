@@ -17,7 +17,7 @@ public:
     void AddOption(LPCTSTR szText, DWORD dwParam);
     void RemoveAllOptions();
 
-    void GetOptionsText(std::vector<LogView::Util::XString>& vctOptions);
+    void GetOptionsText(std::vector<CString>& vctOptions);
 
     void GetTextSize(LPCTSTR szText, SIZE& sizeText);
 

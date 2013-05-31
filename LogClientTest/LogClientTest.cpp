@@ -6,6 +6,8 @@
 #include "LogClientTest.h"
 #include "LogClientTestDlg.h"
 
+#include <boost/lockfree/queue.hpp>
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -50,7 +52,7 @@ BOOL CLogClientTestApp::InitInstance()
 
 	AfxEnableControlContainer();
 
-    XSetOutputLogPath(_T("D:\\ddd.xlog"), XLOG_LEVEL_DIAGNOSIS);
+    XSetOutputLogPath(_T("E:\\Test\\xxx.xlog"), _T("aa|bb"));
 
 	CLogClientTestDlg dlg;
 	m_pMainWnd = &dlg;

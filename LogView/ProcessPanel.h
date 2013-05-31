@@ -24,10 +24,10 @@ public:
 
     void GetOptionsThread(ThreadOptionData& vctOptions);
 
-    LogView::Util::XString GetThreadText(DWORD dwThreadId);
-    LogView::Util::XString GetProcText(DWORD dwProcId);
+    CString GetThreadText(DWORD dwThreadId);
+    CString GetProcText(DWORD dwProcId);
 
-    LogView::Util::XString PidToName(DWORD dwProcId);
+    CString PidToName(DWORD dwProcId);
 
     void    SyncSubTreeState(HTREEITEM hItem, BOOL bChecked);
 

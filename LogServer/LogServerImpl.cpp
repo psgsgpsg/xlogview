@@ -2,36 +2,39 @@
 #include "LogServerImpl.h"
 
 
+#include "../Common/Impl/XLogMgr.h"
 #include "../Common/LogServer.h"
-
-static const UINT g_uShowMainFrame = RegisterWindowMessage(_T("ShowMainFrame_8D855A82_BEE8_4fdf_BF3C_F39D94F6A9B2"));
 
 
 //////////////////////////////////////////////////////////////////////////
 
-BOOL FilterWindowMessage(UINT message, DWORD dwValue)
+namespace 
 {
-    // 添加消息过滤，允许接受低级别的Explorer发送WM_TASKBARCREATED消息
-    typedef BOOL (WINAPI FAR *ChangeWindowMessageFilter_PROC)(UINT,DWORD);
-    ChangeWindowMessageFilter_PROC pfnChangeWindowMessageFilter;
-    pfnChangeWindowMessageFilter = (ChangeWindowMessageFilter_PROC)::GetProcAddress (::GetModuleHandle(_T("USER32")), "ChangeWindowMessageFilter");
-    BOOL bResult = FALSE;
-    if(pfnChangeWindowMessageFilter != NULL)
+    BOOL FilterWindowMessage(UINT message, DWORD dwValue)
     {
-        bResult = pfnChangeWindowMessageFilter(message, dwValue);
+        // 添加消息过滤，允许接受低级别的Explorer发送WM_TASKBARCREATED消息
+        typedef BOOL (WINAPI FAR *ChangeWindowMessageFilter_PROC)(UINT,DWORD);
+        ChangeWindowMessageFilter_PROC pfnChangeWindowMessageFilter;
+        pfnChangeWindowMessageFilter = (ChangeWindowMessageFilter_PROC)::GetProcAddress (::GetModuleHandle(_T("USER32")), "ChangeWindowMessageFilter");
+        BOOL bResult = FALSE;
+        if(pfnChangeWindowMessageFilter != NULL)
+        {
+            bResult = pfnChangeWindowMessageFilter(message, dwValue);
+        }
+        else
+        {
+            bResult = TRUE;
+        }
+        return bResult;
     }
-    else
-    {
-        bResult = TRUE;
-    }
-    return bResult;
+    LPCTSTR g_szLogServerPropName = _T("LJWFDSQGT");
 }
 
 //////////////////////////////////////////////////////////////////////////
 CLogServerImpl::CLogServerImpl()
 {
     m_hLogWnd = NULL;
-    m_uTimerId = 1234;
+    m_pLogListener = NULL;
 }
 
 CLogServerImpl::~CLogServerImpl()
@@ -39,11 +42,10 @@ CLogServerImpl::~CLogServerImpl()
     ;
 }
 
-BOOL CLogServerImpl::InitLogServer(LPCTSTR szName)
+BOOL CLogServerImpl::StartLogServer(LPCTSTR szName)
 {
     BOOL bResult = FALSE;
 
-    FilterWindowMessage(g_uShowMainFrame, TRUE);
     FilterWindowMessage(WM_COPYDATA, TRUE);
 
     // Register Class
@@ -65,94 +67,34 @@ BOOL CLogServerImpl::InitLogServer(LPCTSTR szName)
     {
         m_hLogWnd = CreateWindow(LOG_SERVER_PORT_SIG, szName, WS_POPUP, 0, 0, 0, 0, HWND_MESSAGE, 0, GetModuleHandle(NULL), 0);
         AssocObj(m_hLogWnd, this);
-        m_uTimerId = SetTimer(m_hLogWnd, m_uTimerId, 500, NULL);
-
-        m_strServerName = szName;
     }
-
-    // m_WinDebugServer.Init();
 
     return (m_hLogWnd != NULL);
 }
 
-void CLogServerImpl::AddLogListener(ILogListener* pListener)
+void CLogServerImpl::SetLogListener(ILogListener* pListener)
 {
-    m_vctLogListener.push_back(pListener);
+    m_pLogListener = pListener;
 }
 
-void CLogServerImpl::DelLogListener(ILogListener* pListener)
+void CLogServerImpl::StopLogServer()
 {
-    ILogListener* pTemp = NULL;
-    LogListenerVector::iterator IteListener = m_vctLogListener.begin();
-    for(; IteListener != m_vctLogListener.end(); ++ IteListener)
+    if(m_pLogListener)
     {
-        pTemp = (*IteListener);
-        if(pTemp == pListener)
-        {
-            pTemp->Release();
-            m_vctLogListener.erase(IteListener);
-            break;
-        }
+        m_pLogListener->Release();
+        m_pLogListener = NULL;
     }
-}
-
-void CLogServerImpl::UnInitLogServer()
-{
-    m_WinDebugServer.UnInit();
-
-    ILogListener* pTemp = NULL;
-    LogListenerVector::iterator IteListener = m_vctLogListener.begin();
-    for(; IteListener != m_vctLogListener.end(); ++ IteListener)
-    {
-        pTemp = (*IteListener);
-        pTemp->Release();
-    }
-    m_vctLogListener.clear();
-}
-
-CLogServerImpl* CLogServerImpl::GetObject(LPCTSTR szName)
-{
-    CLogServerImpl* pLogServer = NULL;
-    HWND hLogServerWnd = FindWindowEx(NULL, NULL, LOG_SERVER_PORT_SIG, szName);
-
-    DWORD dwPid = 0;
-    while(hLogServerWnd != NULL && GetWindowThreadProcessId(hLogServerWnd, &dwPid) != 0 && dwPid != GetCurrentProcessId())
-    {
-        hLogServerWnd = FindWindowEx(NULL, hLogServerWnd, LOG_SERVER_PORT_SIG, szName);
-    }
-
-    if(hLogServerWnd != NULL)
-    {
-        pLogServer = GetAssocedObj(hLogServerWnd);
-    }
-    return pLogServer;
-}
-
-HWND CLogServerImpl::GetLogServerImplWnd()
-{
-    return m_hLogWnd;
 }
 
 CLogServerImpl* CLogServerImpl::GetAssocedObj(HWND hWnd)
 {
-    CLogServerImpl* pLogServer = (CLogServerImpl*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+    CLogServerImpl* pLogServer = (CLogServerImpl*)GetProp(hWnd, g_szLogServerPropName);
     return pLogServer;
 }
 
 void CLogServerImpl::AssocObj(HWND hWnd, CLogServerImpl* pObj)
 {
-    SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)pObj);
-}
-
-BOOL CALLBACK ShowWindowCallback(HWND hWnd, LPARAM)
-{
-    if(IsWindowVisible(hWnd) && GetParent(hWnd) == NULL)
-    {
-        ::ShowWindow(hWnd, SW_SHOWNORMAL);
-        ::SetForegroundWindow(hWnd);
-        ::SetActiveWindow(hWnd);
-    }
-    return TRUE;
+    SetProp(hWnd, g_szLogServerPropName, (HANDLE)pObj);
 }
 
 LRESULT CLogServerImpl::LogServerWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -165,150 +107,76 @@ LRESULT CLogServerImpl::LogServerWndProc(HWND hWnd, UINT message, WPARAM wParam,
             pLogServer->OnLogArrived(wParam, lParam);
         }
     }
-    else if(g_uShowMainFrame == message)
-    {
-        EnumThreadWindows(GetCurrentThreadId(), &ShowWindowCallback, 0);
-    }
-    else if(WM_TIMER == message)
-    {
-        CLogServerImpl* pLogServer = GetAssocedObj(hWnd);
-        if(pLogServer != NULL && wParam == pLogServer->m_uTimerId)
-        {
-            pLogServer->OnOutputDebugStringTimer();
-        }
-    }
+
     return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
 void CLogServerImpl::OnLogArrived(WPARAM wParam, LPARAM lParam)
 {
-    COPYDATASTRUCT* pData = (COPYDATASTRUCT*)lParam;
-    if(pData == NULL)
+    if(m_pLogListener == NULL)
         return;
 
-    DWORD dwThreadId = 0;
-    LogView::Util::CDataBuffer data;
-    data.Reset((LPCTSTR)pData->lpData, pData->cbData / sizeof(TCHAR));
+    COPYDATASTRUCT* pData = (COPYDATASTRUCT*)lParam;
+    if(pData == NULL || pData->dwData != LOG_IPC_MAGIC_NUM)
+        return;
 
-    LogView::Util::stLogInfo info;
-    data >> info;
-
-    OnLogArrived(info);
-}
-
-void CLogServerImpl::OnOutputDebugStringTimer()
-{
-    AI_AUTO_LOCK(&m_WinDebugServer.m_Lock);
-
-    BufferVector& _Buffer = m_WinDebugServer.m_BufferVector;
-    BufferVector::iterator IteData = _Buffer.begin();
-    for(; IteData != _Buffer.end(); ++ IteData)
+    stLogData data;
+    if(LogViewInternal::LogInfo::ParseLog(pData->lpData, pData->cbData, data))
     {
-        const stInnerDBWinBuffer& data = *IteData;
-
-        LogView::Util::stLogInfo info;
-
-        info.dwProcId = data.dwProcessId;
-        info.dwThreadId = 0;
-        info.strFilter = _T("OutputDebugString");
-        info.strLog = data.strData;
-        info.uLevel = 1234;
-
-        OnLogArrived(info);
-    }
-    _Buffer.clear();
-}
-
-void CLogServerImpl::OnLogArrived(const LogView::Util::stLogInfo& info)
-{
-    ILogListener* pTemp = NULL;
-    LogListenerVector::iterator IteListener = m_vctLogListener.begin();
-    for(; IteListener != m_vctLogListener.end(); ++ IteListener)
-    {
-        pTemp = (*IteListener);
-        pTemp->OnLogArrived(info);
+        AppendLog(data);
     }
 }
 
-void CLogServerImpl::ShowExistedLogServer(LPCTSTR szName)
+void CLogServerImpl::AppendLog(const stLogData& data)
 {
-    HWND hLogServerWnd = FindWindowEx(NULL, NULL, LOG_SERVER_PORT_SIG, szName);
-
-    DWORD dwPid = 0;
-    while(hLogServerWnd != NULL)
-    {
-        ::PostMessage(hLogServerWnd, g_uShowMainFrame, 0, 0);
-        hLogServerWnd = FindWindowEx(NULL, hLogServerWnd, LOG_SERVER_PORT_SIG, szName);
-    }
+    if(m_pLogListener)
+        m_pLogListener->OnLogArrived(data);
 }
 
-BOOL CLogServerImpl::StartLogOutputDebugString()
-{
-    return m_WinDebugServer.Init();
-}
-
-void CLogServerImpl::StopLogOutputDebugString()
-{
-    m_WinDebugServer.UnInit();
-}
-
-HWND GetLogServerImplWnd()
-{
-    CLogServerImpl* pLogServer = CLogServerImpl::GetObject(NULL);
-    return pLogServer->GetLogServerImplWnd();
-}
 //////////////////////////////////////////////////////////////////////////
 
-BOOL InitLogServer(LPCTSTR szName)
+namespace
 {
-    CLogServerImpl* pLogServer = new CLogServerImpl;
-    return pLogServer->InitLogServer(szName);
+    CLogServerImpl* g_LogServer = NULL;
 }
 
-void AddLogListener(ILogListener* pListener)
+BOOL XStartLogServer(LPCTSTR szName)
 {
-    CLogServerImpl* pLogServer = CLogServerImpl::GetObject(NULL);
-    if(pLogServer != NULL)
-        pLogServer->AddLogListener(pListener);
+    if(g_LogServer)
+        return TRUE;
+
+    g_LogServer = new CLogServerImpl;
+    return g_LogServer->StartLogServer(szName);
 }
 
-void DelLogListener(ILogListener* pListener)
+void XSetLogListener(ILogListener* pListener)
 {
-    CLogServerImpl* pLogServer = CLogServerImpl::GetObject(NULL);
-    if(pLogServer != NULL)
-        pLogServer->DelLogListener(pListener);
+    if(g_LogServer)
+        g_LogServer->SetLogListener(pListener);
 }
 
-void UnInitLogServer()
+void XStopLogServer()
 {
-    CLogServerImpl* pLogServer = CLogServerImpl::GetObject(NULL);
-    if(pLogServer != NULL)
-        delete pLogServer;
+    if(g_LogServer)
+    {
+        g_LogServer->StopLogServer();
+        delete g_LogServer;
+        g_LogServer = NULL;
+    }
 }
 
-void OnLogArrived(const LogView::Util::stLogInfo& info)
+void XAppendLog(const stLogData& log, void* pData)
 {
-    CLogServerImpl* pLogServer = CLogServerImpl::GetObject(NULL);
-    if(pLogServer != NULL)
-        pLogServer->OnLogArrived(info);
+    if(g_LogServer)
+        g_LogServer->AppendLog(log);
 }
 
-void ShowExistedLogServer(LPCTSTR szName)
+BOOL XOpenLogFile(LPCTSTR szFile, NewLogCallback callback, void* pData)
 {
-    CLogServerImpl::ShowExistedLogServer(szName);
+    return LogViewInternal::XLogMgr::OpenXLog(szFile, callback, pData);
 }
 
-BOOL StartLogOutputDebugString()
+BOOL XSaveLogFile(LPCTSTR szFile, QueryLogCallback callback, void* pData)
 {
-    CLogServerImpl* pLogServer = CLogServerImpl::GetObject(NULL);
-    if(pLogServer != NULL)
-        return pLogServer->StartLogOutputDebugString();
-    return FALSE;
-}
-
-void StopLogOutputDebugString()
-{
-    CLogServerImpl* pLogServer = CLogServerImpl::GetObject(NULL);
-    if(pLogServer != NULL)
-        pLogServer->StopLogOutputDebugString();
+    return LogViewInternal::XLogMgr::SaveXLog(szFile, callback, pData);
 }

@@ -10,11 +10,14 @@
 #define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
 
 #include <tchar.h>
+#include <string>
 #include <windows.h>
 
 
-#define ISSETUPHLP
-#include "../Common/XString.h"
 
+namespace LogViewInternal
+{
+    typedef std::basic_string<TCHAR> tstring;
+}
 
 // TODO: reference additional headers your program requires here

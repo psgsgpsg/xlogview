@@ -10,10 +10,15 @@
 #define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
 
 #include <tchar.h>
+#include <string>
 #include <windows.h>
+#include <strsafe.h>
+#include <process.h>
 
-#include "../Common/XString.h"
+namespace LogViewInternal
+{
+    typedef std::basic_string<TCHAR> tstring;
+}
 
-#define _NEED_DEF_UNICODE_STRING_
 
 // TODO: reference additional headers your program requires here

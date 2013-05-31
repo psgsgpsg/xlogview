@@ -42,7 +42,6 @@
 #define ID_OPTION_TOPMOST               32782
 #define ID_OPTION_AUTOSCROLL            32783
 #define ID_EDIT_COPYWHOLELINE           32799
-#define ID_OPTION_LOGOUTPUTDEBUGSTRING  32803
 #define ID_OPTION_OPTIONS               32805
 #define ID_OPTION_STUB                  32806
 #define ID_OPTION_STUB32807             32807

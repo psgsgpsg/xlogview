@@ -62,11 +62,11 @@ void CProcessPanel::AddOption(DWORD dwThreadId, DWORD dwProcId, DWORD dwParam)
     if(hProcItem == NULL)
     {
         // 该进程还不存在
-        hProcItem = m_ThreadTree.InsertItem(GetProcText(dwProcId).c_str(), NULL, TVI_LAST);
+        hProcItem = m_ThreadTree.InsertItem(GetProcText(dwProcId), NULL, TVI_LAST);
         m_ThreadTree.SetItemData(hProcItem, dwProcId);
         m_ThreadTree.SetCheck(hProcItem, TRUE);
 
-        HTREEITEM hThreadItem = m_ThreadTree.InsertItem(GetThreadText(dwThreadId).c_str(), hProcItem, TVI_LAST);
+        HTREEITEM hThreadItem = m_ThreadTree.InsertItem(GetThreadText(dwThreadId), hProcItem, TVI_LAST);
         m_ThreadTree.SetItemData(hThreadItem, dwThreadId);
         m_ThreadTree.SetCheck(hThreadItem, TRUE);
     }
@@ -85,7 +85,7 @@ void CProcessPanel::AddOption(DWORD dwThreadId, DWORD dwProcId, DWORD dwParam)
 
         if(dwTreeThreadId != dwThreadId)
         {
-            hThreadItem = m_ThreadTree.InsertItem(GetThreadText(dwThreadId).c_str(), hProcItem, TVI_LAST);
+            hThreadItem = m_ThreadTree.InsertItem(GetThreadText(dwThreadId), hProcItem, TVI_LAST);
             m_ThreadTree.SetItemData(hThreadItem, dwThreadId);
             m_ThreadTree.SetCheck(hThreadItem, TRUE);
         }
@@ -135,23 +135,24 @@ void CProcessPanel::GetOptionsThread(ThreadOptionData& vctOptions)
     }
 }
 
-LogView::Util::XString CProcessPanel::GetThreadText(DWORD dwThreadId)
+CString CProcessPanel::GetThreadText(DWORD dwThreadId)
 {
-    LogView::Util::XString strThread = LogView::Util::XString(_T("%1")).arg(dwThreadId);
+    CString strThread;
+    strThread.Format(_T("%u"), dwThreadId);
     return strThread;
 }
 
-LogView::Util::XString CProcessPanel::GetProcText(DWORD dwProcId)
+CString CProcessPanel::GetProcText(DWORD dwProcId)
 {
-    LogView::Util::XString strProcName = PidToName(dwProcId);
-    LogView::Util::XString strProc;
-    strProc.Format(_T("%s(%d)"), strProcName.c_str(), dwProcId);
+    CString strProcName = PidToName(dwProcId);
+    CString strProc;
+    strProc.Format(_T("%s(%d)"), strProcName, dwProcId);
     return strProc;
 }
 
-LogView::Util::XString CProcessPanel::PidToName(DWORD dwProcId)
+CString CProcessPanel::PidToName(DWORD dwProcId)
 {
-    LogView::Util::XString strResult;
+    CString strResult;
     HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if(hSnap == INVALID_HANDLE_VALUE)
         return strResult;

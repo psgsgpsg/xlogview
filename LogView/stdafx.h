@@ -31,8 +31,6 @@
 #endif // _AFX_NO_AFXCMN_SUPPORT
 
 
-#define _NEED_DEF_UNICODE_STRING_
-#include "../Common/XString.h"
 #include "../Common/LogServer.h"
 
 

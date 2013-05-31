@@ -269,11 +269,6 @@ BEGIN
         MENUITEM "Enable &Regex",               ID_OPTION_ENABLE_REGEX
         MENUITEM "Enable &Wildcard",            ID_OPTION_ENABLE_WILDCARD
         MENUITEM SEPARATOR
-        POPUP "A&dvance"
-        BEGIN
-            MENUITEM "Log OutputDebugString",       ID_OPTION_LOGOUTPUTDEBUGSTRING
-        END
-        MENUITEM SEPARATOR
         MENUITEM "&Options",                    ID_OPTION_OPTIONS
     END
     POPUP "&Help"

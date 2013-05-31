@@ -123,7 +123,7 @@ void COptionSelectPanel::RemoveAllOptions()
     }
 }
 
-void COptionSelectPanel::GetOptionsText(std::vector<LogView::Util::XString>& vctOptions)
+void COptionSelectPanel::GetOptionsText(std::vector<CString>& vctOptions)
 {
     vctOptions.clear();
 
