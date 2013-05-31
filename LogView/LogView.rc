@@ -83,7 +83,7 @@ CAPTION "About LogView"
 FONT 9, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     ICON            IDR_MAINFRAME,IDC_STATIC,14,14,20,20
-    LTEXT           "LogView, 1.0 Copyright (C) 2011",IDC_STATIC,41,14,114,8,SS_NOPREFIX
+    LTEXT           "LogView, 2.0 Copyright (C) 2011",IDC_STATIC,41,14,114,8,SS_NOPREFIX
     DEFPUSHBUTTON   "OK",IDOK,113,41,50,14,WS_GROUP
     LTEXT           "Email: huhangscu@gmail.com",IDC_LINK_EMAIL,41,28,200,8,SS_NOTIFY
 END
@@ -151,7 +151,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,9,1009
+ FILEVERSION 2,0,0,531
  PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -169,12 +169,11 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "SLTalk"
             VALUE "FileDescription", "Log Viewer"
-            VALUE "FileVersion", "1.0.9.1009"
             VALUE "InternalName", "LogView.exe"
             VALUE "LegalCopyright", "Copyright (c) 2011 SLTalk"
             VALUE "OriginalFilename", "LogView.exe"
             VALUE "ProductName", "LogView"
-            VALUE "ProductVersion", "1.0.9.1009"
+            VALUE "ProductVersion", "2.0.0.0531"
         END
     END
     BLOCK "VarFileInfo"

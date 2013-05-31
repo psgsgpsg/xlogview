@@ -75,6 +75,5 @@ int CLogViewApp::ExitInstance()
 
 void CLogViewApp::OnHelp()
 {
-    CAboutDlg dlg;
-    dlg.DoModal();
+    CAboutDlg::ShowAbout();
 }
