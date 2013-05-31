@@ -2,6 +2,8 @@
 #include "AboutDlg.h"
 
 
+BOOL CAboutDlg::ms_bAboutVisible = FALSE;
+
 CAboutDlg::CAboutDlg() : CDialog(CAboutDlg::IDD)
 {
     m_linkEmail.SetLink(_T("mailto:huhangscu@gmail.com"));
@@ -15,3 +17,15 @@ void CAboutDlg::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CAboutDlg, CDialog)
 END_MESSAGE_MAP()
+
+void CAboutDlg::ShowAbout()
+{
+    if(!ms_bAboutVisible)
+    {
+        ms_bAboutVisible = TRUE;
+        CAboutDlg dlg;
+        dlg.DoModal();
+        ms_bAboutVisible = FALSE;
+    }
+}
+
