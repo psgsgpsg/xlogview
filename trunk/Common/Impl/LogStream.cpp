@@ -2,23 +2,51 @@
 #include "LogStream.h"
 
 #include "LogDef.h"
-#include <boost/pool/pool.hpp>
+#include <cassert>
 
 namespace LogViewInternal
 {
     namespace
     {
-        typedef boost::pool<boost::default_user_allocator_malloc_free> LogPool;
-        static LogPool g_LogBufferPool(MAX_LOG_LENGTH + MAX_PATH);
+        static const DWORD g_dwMaxLogCount = 50;
+        static const DWORD g_dwSingleLogSize = (MAX_LEVEL_LENGTH + MAX_FILTER_LENGTH + MAX_LOG_LENGTH) * sizeof(TCHAR) + sizeof(size_t) * 3 + sizeof(DWORD) * 2 + sizeof(SYSTEMTIME);
+        static BYTE g_LogBuffer[g_dwSingleLogSize * g_dwMaxLogCount] = {0};
+        static volatile LONG g_LogBufferBitmap[g_dwMaxLogCount] = {0};
 
-        __inline void* GetPooledBuffer()
+        class CPooledBuffer
         {
-            return g_LogBufferPool.malloc();
-        }
-        __inline void ReleasePooledBuffer(void* buffer)
-        {
-            g_LogBufferPool.free(buffer);
-        }
+        public:
+            void* GetPooledBuffer()
+            {
+                void* pBuffer = NULL;
+                size_t i = 0;
+                for(i=0; i<g_dwMaxLogCount; ++ i)
+                {
+                    if(::InterlockedExchangeAdd(&g_LogBufferBitmap[i], 1) == 0)
+                    {
+                        pBuffer = g_LogBuffer + i * g_dwSingleLogSize;
+                        break;
+                    }
+                }
+                assert(pBuffer != NULL && _T("GetPooledBuffer"));
+                if(pBuffer == NULL)
+                    pBuffer = malloc(g_dwSingleLogSize);
+                return pBuffer;
+            }
+            void ReleasePooledBuffer(void* buffer)
+            {
+                assert(((LPBYTE)buffer - g_LogBuffer) % g_dwSingleLogSize == 0);
+                int nBufferIndex = ((LPBYTE)buffer - g_LogBuffer) / g_dwSingleLogSize;
+                assert(nBufferIndex >= 0 && nBufferIndex < g_dwMaxLogCount);
+                if(nBufferIndex >= 0 && nBufferIndex < g_dwMaxLogCount)
+                    ::InterlockedExchange(&g_LogBufferBitmap[nBufferIndex], 0);
+                else
+                    free(buffer);
+            }
+
+        private:
+        } g_PooledBuffer;
+
         __inline void AddData(stLogInfo& log, LPCVOID data, DWORD dwLen)
         {
             memcpy(log.pBuffer + log.dwPos, data, dwLen);
@@ -64,7 +92,7 @@ namespace LogViewInternal
         {
             if(log.pBuffer != NULL)
             {
-                ReleasePooledBuffer(log.pBuffer);
+                g_PooledBuffer.ReleasePooledBuffer(log.pBuffer);
             }
         }
 
@@ -93,7 +121,9 @@ namespace LogViewInternal
                 + sizeof(DWORD) + nFilterLen    // sizeof filter, including null
                 + sizeof(DWORD) + (1 + MAX_LOG_LENGTH) * sizeof(TCHAR);      // sizeof log, including null
 
-            log.pBuffer = (LPBYTE)GetPooledBuffer();
+            log.pBuffer = (LPBYTE)g_PooledBuffer.GetPooledBuffer();
+            if(log.pBuffer == NULL)
+                return NULL;
 
             AddData(log, &dwThreadId, sizeof(dwThreadId));
             AddData(log, &dwProcId, sizeof(dwProcId));

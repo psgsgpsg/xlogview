@@ -7,7 +7,6 @@
 
 #include <queue>
 #include <cassert>
-#include <boost/lockfree/queue.hpp>
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -228,6 +227,8 @@ BOOL OutputLogImpl(LPCTSTR szLevel, LPCTSTR szFilter, LPCTSTR szFormat, ...)
 {
     LogViewInternal::stLogInfo log;
     LPTSTR szLog = LogViewInternal::LogInfo::GetLogBuffer(log, szLevel, szFilter);
+    if(szLog == NULL)
+        return FALSE;
 
     va_list vlist;
     va_start(vlist, szFormat);
@@ -236,6 +237,7 @@ BOOL OutputLogImpl(LPCTSTR szLevel, LPCTSTR szFilter, LPCTSTR szFormat, ...)
     if(!SUCCEEDED(hResult))
         return FALSE;
 
+    szLog[MAX_LOG_LENGTH - 1] = 0;
     LogViewInternal::LogInfo::SetLog(log, szLog);
 
     GetLogBuffer().PushLog(log);
