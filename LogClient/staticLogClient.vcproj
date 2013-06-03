@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)Common&quot;;E:\Src\boost_1_53_0"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)Common&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;_BIND_TO_CURRENT_VCLIBS_VERSION=1;_NO_X_OUTPUT_LOG_"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="3"
@@ -62,7 +62,6 @@
 			<Tool
 				Name="VCLibrarianTool"
 				OutputFile="$(OutDir)\sdLogClient.lib"
-				AdditionalLibraryDirectories="E:\Src\boost_1_53_0\stage\lib"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -107,7 +106,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)Common&quot;;E:\Src\boost_1_53_0"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)Common&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;_BIND_TO_CURRENT_VCLIBS_VERSION=1;_NO_X_OUTPUT_LOG_"
 				MinimalRebuild="false"
 				RuntimeLibrary="0"
@@ -128,7 +127,6 @@
 			<Tool
 				Name="VCLibrarianTool"
 				OutputFile="$(OutDir)\srLogClient.lib"
-				AdditionalLibraryDirectories="E:\Src\boost_1_53_0\stage\lib"
 			/>
 			<Tool
 				Name="VCALinkTool"

@@ -6,7 +6,6 @@
 #include "LogClientTest.h"
 #include "LogClientTestDlg.h"
 
-#include <boost/lockfree/queue.hpp>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
