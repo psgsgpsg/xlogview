@@ -6,7 +6,6 @@
 #include "../Common/Impl/XLogMgr.h"
 
 #include <queue>
-#include <cassert>
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -114,17 +113,17 @@ namespace LogViewInternal
             CLock       m_EmptyLock;
         };
 
-        class CLogBuffer
+        class CLogBufferMgr
         {
-            CLogBuffer(const CLogBuffer&);
-            CLogBuffer& operator =(const CLogBuffer&);
+            CLogBufferMgr(const CLogBufferMgr&);
+            CLogBufferMgr& operator =(const CLogBufferMgr&);
         public:
-            CLogBuffer()
+            CLogBufferMgr()
             {
                 m_bStopLogThread = FALSE;
                 m_hLogThread = (HANDLE)_beginthreadex(0, 0, &LogThreadProc, (void*)this, 0, 0);
             }
-            ~CLogBuffer()
+            ~CLogBufferMgr()
             {
                 if(m_hLogThread != NULL)
                 {
@@ -159,7 +158,7 @@ namespace LogViewInternal
             static unsigned WINAPI LogThreadProc(void* pParam)
             {
                 HWND hLogServerWnd = FindLogServer();
-                CLogBuffer* pLogBuffer = (CLogBuffer*)pParam;
+                CLogBufferMgr* pLogBuffer = (CLogBufferMgr*)pParam;
                 LogViewInternal::stLogInfo log;
 
                 while(pLogBuffer->m_LogQueue.Wait() && !pLogBuffer->m_bStopLogThread)
@@ -209,16 +208,16 @@ namespace LogViewInternal
 
 //////////////////////////////////////////////////////////////////////////
 
-LogViewInternal::Impl::CLogBuffer& GetLogBuffer()
+LogViewInternal::Impl::CLogBufferMgr& GetLogBufferMgr()
 {
-    static LogViewInternal::Impl::CLogBuffer g_LogBuffer;
-    return g_LogBuffer;
+    static LogViewInternal::Impl::CLogBufferMgr g_LogBufferMgr;
+    return g_LogBufferMgr;
 }
 
 // 设置显示Log保存文件路径和级别
 void SetOutputLogPathImpl(LPCTSTR szPath, LPCTSTR szLevel)
 {
-    GetLogBuffer().SetOutputLogPath(szPath, szLevel);
+    GetLogBufferMgr().SetOutputLogPath(szPath, szLevel);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -240,7 +239,7 @@ BOOL OutputLogImpl(LPCTSTR szLevel, LPCTSTR szFilter, LPCTSTR szFormat, ...)
     szLog[MAX_LOG_LENGTH - 1] = 0;
     LogViewInternal::LogInfo::SetLog(log, szLog);
 
-    GetLogBuffer().PushLog(log);
+    GetLogBufferMgr().PushLog(log);
 
     return TRUE;
 }

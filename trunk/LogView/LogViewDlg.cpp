@@ -542,8 +542,6 @@ void CLogViewDlg::OnLogArrived(const stLogData& info)
     GetUIData(uidata, info);
 
     BOOL bAppended = AppendLogWithFilter(uidata);
-
-    UpdateStatusBar();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -922,7 +920,7 @@ void CLogViewDlg::UpdateItemCount()
 void CLogViewDlg::DelayUpdateItemCount()
 {
     if(m_uDelayUpdateItemCountTimerId == 0)
-        m_uDelayUpdateItemCountTimerId = SetTimer(0x100, 200, NULL);
+        m_uDelayUpdateItemCountTimerId = SetTimer(0x100, 500, NULL);
 }
 
 // 设置/获取某列Header的参数

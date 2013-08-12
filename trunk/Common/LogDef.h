@@ -3,6 +3,7 @@
 
 
 #include <vector>
+#include <cassert>
 
 #define MAX_LEVEL_LENGTH        30
 #define MAX_FILTER_LENGTH       30
@@ -31,4 +32,10 @@ typedef std::vector<stLogData> LogDataVector;
 typedef void (*NewLogCallback)(const stLogData& log, void* pData);
 typedef BOOL (*QueryLogCallback)(int nIndex, stLogData& log, void* pData);
 
+
+#ifdef _LOG_TEST_
+#define LogAssert(x)   assert
+#else
+#define LogAssert(x)   __noop
+#endif  // 
 
