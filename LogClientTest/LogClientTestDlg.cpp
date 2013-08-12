@@ -165,11 +165,15 @@ void CLogClientTestDlg::OnBnClickedOk()
 
     std::wstring str2;
 
-    BOOL bRepeat = IsDlgButtonChecked(IDC_CHKBTN_REPEAT);
-
-    int nEnd = bRepeat ? 50 : 1;
+    DWORD dwTickCount = ::GetTickCount();
+    int nEnd = GetDlgItemInt(IDC_EDIT_TIMES);
     for(int i=0; i<nEnd; ++ i)
     {
         XLog(strLevel, strFilter, _T("(%d)%s"), i, (LPCTSTR)strLog);
     }
+    dwTickCount = ::GetTickCount() - dwTickCount;
+
+    CString strInfo;
+    strInfo.Format(_T("Total Elapse£º%d ms"), dwTickCount);
+    SetDlgItemText(IDC_LABEL_INFO, strInfo);
 }

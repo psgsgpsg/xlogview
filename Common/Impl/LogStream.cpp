@@ -2,7 +2,6 @@
 #include "LogStream.h"
 
 #include "LogDef.h"
-#include <cassert>
 
 namespace LogViewInternal
 {
@@ -12,6 +11,7 @@ namespace LogViewInternal
         static const DWORD g_dwSingleLogSize = (MAX_LEVEL_LENGTH + MAX_FILTER_LENGTH + MAX_LOG_LENGTH) * sizeof(TCHAR) + sizeof(size_t) * 3 + sizeof(DWORD) * 2 + sizeof(SYSTEMTIME);
         static BYTE g_LogBuffer[g_dwSingleLogSize * g_dwMaxLogCount] = {0};
         static volatile LONG g_LogBufferBitmap[g_dwMaxLogCount] = {0};
+        static volatile LONG g_LogBufferIndex = 0;
 
         class CPooledBuffer
         {
@@ -19,25 +19,41 @@ namespace LogViewInternal
             void* GetPooledBuffer()
             {
                 void* pBuffer = NULL;
-                size_t i = 0;
-                for(i=0; i<g_dwMaxLogCount; ++ i)
+                LONG nIndex = ::InterlockedExchangeAdd(&g_LogBufferIndex, 0);
+                BOOL bExceedMax = FALSE;
+                for(LONG i=nIndex; TRUE; ++ i)
                 {
+                    if(!bExceedMax && i == g_dwMaxLogCount)
+                    {
+                        i = 0;
+                        bExceedMax = TRUE;
+                    }
+                    if(bExceedMax && i == nIndex)
+                    {
+                        break;
+                    }
+
                     if(::InterlockedExchangeAdd(&g_LogBufferBitmap[i], 1) == 0)
                     {
+                        ::InterlockedExchange(&g_LogBufferIndex, (i  + 1 == g_dwMaxLogCount) ? 0 : i + 1);
                         pBuffer = g_LogBuffer + i * g_dwSingleLogSize;
                         break;
                     }
                 }
-                assert(pBuffer != NULL && _T("GetPooledBuffer"));
+
+                LogAssert(pBuffer != NULL && _T("GetPooledBuffer"));
                 if(pBuffer == NULL)
+                {
+                    ::SwitchToThread();
                     pBuffer = malloc(g_dwSingleLogSize);
+                }
                 return pBuffer;
             }
             void ReleasePooledBuffer(void* buffer)
             {
-                assert(((LPBYTE)buffer - g_LogBuffer) % g_dwSingleLogSize == 0);
+                LogAssert(((LPBYTE)buffer - g_LogBuffer) % g_dwSingleLogSize == 0);
                 int nBufferIndex = ((LPBYTE)buffer - g_LogBuffer) / g_dwSingleLogSize;
-                assert(nBufferIndex >= 0 && nBufferIndex < g_dwMaxLogCount);
+                LogAssert(nBufferIndex >= 0 && nBufferIndex < g_dwMaxLogCount);
                 if(nBufferIndex >= 0 && nBufferIndex < g_dwMaxLogCount)
                     ::InterlockedExchange(&g_LogBufferBitmap[nBufferIndex], 0);
                 else
